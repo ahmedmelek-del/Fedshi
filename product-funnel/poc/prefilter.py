@@ -2,14 +2,15 @@
 
 Drops: excluded categories (clothing/sized, liquids/cosmetics, fragile), big brands,
 seasonal-Western items, out-of-range prices, and items too heavy/bulky for air (by keyword).
-Usage: python3 prefilter.py data/amazon_new_releases.json data/candidates.json
+Usage: python3 prefilter.py data/amazon_new_releases.json data/candidates.json [data/seen_asins.txt]
+The optional seen file lists ASINs already shown on the review page; they are skipped.
 """
 import json
 import re
 import sys
 
 EXCLUDE = {
-    'clothing/sized': r"\b(shirt|t-shirt|dress|hoodie|sweater|jacket|pants|leggings|socks?|shoes?|sneakers?|boots?|slippers?|pajamas?|bra|underwear|costume|hat|beanie|gloves?|onesie|romper|swimsuit|size \d)\b",
+    'clothing/sized': r"\b(rings|ring size|necklace|bracelet|earrings?|shirt|t-shirt|dress|hoodie|sweater|jacket|pants|leggings|socks?|shoes?|sneakers?|boots?|slippers?|pajamas?|bra|underwear|costume|hat|beanie|gloves?|onesie|romper|swimsuit|size \d)\b",
     'liquid/cosmetic': r"\b(lotion|serum|cream|shampoo|conditioner|oil|perfume|cologne|spray|gel|liquid|soap|wash|cleaner solution|ink|paint|polish|makeup|lipstick|mascara|sunscreen|supplement|vitamin|gummies|capsules?|tea|coffee beans|sauce|snack|food)\b",
     'fragile': r"\b(glass|ceramic|porcelain|crystal|mirror|marble|stoneware)\b",
     'seasonal-west': r"\b(christmas|xmas|advent|halloween|thanksgiving|stocking|santa|ornaments?|easter|hanukkah)\b",
@@ -25,12 +26,21 @@ def price(p):
     return float(m.group()) if m else None
 
 
-def main(src, dst):
+def main(src, dst, seen_path=None):
     rows = json.load(open(src))
+    seen = set()
+    if seen_path:
+        try:
+            seen = {l.strip() for l in open(seen_path) if l.strip()}
+        except FileNotFoundError:
+            pass
     kept, dropped = [], {}
     seen_titles = set()
     for r in rows:
         t = r['title'].lower()
+        if r.get('asin') in seen:
+            dropped['already reviewed'] = dropped.get('already reviewed', 0) + 1
+            continue
         reason = next((k for k, rx in EXCLUDE.items() if re.search(rx, t)), None)
         if not reason and re.search(BRANDS, t):
             reason = 'big brand'
@@ -52,4 +62,4 @@ def main(src, dst):
 
 
 if __name__ == '__main__':
-    main(*sys.argv[1:3])
+    main(*sys.argv[1:4])

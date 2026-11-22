@@ -69,7 +69,10 @@ def main():
     ali = json.load(open('data/aliexpress.json'))
     rows = []
     for s in short:
-        a = amz[s['idx']]
+        if s.get('idx') is not None:
+            a = amz[s['idx']]
+        else:  # item added by hand (inbox) or from an export: no Amazon row
+            a = {'reviews': 0, 'url': '', 'usd': s.get('usd', 0)}
         x = ali.get(s['id'], {'results': []})
         l, w, h = s['dims']
         vol_kg = l * w * h / A['volume_divisor']
@@ -101,6 +104,9 @@ def main():
             'amazon_reviews': a['reviews'], 'ali_top_sold': top_sold,
             'wow': s['wow'], 'mass': s['mass'], 'open': s['open'], 'video': s['video'],
             'flags': ', '.join(flags), 'note': s['note'], 'amazon_url': a['url'],
+            'asin': a.get('asin', ''), 'source': s.get('source', 'amazon_new_releases'),
+            'source_url': s.get('source_url', ''), 'source_label': s.get('source_label', ''),
+            'image_url': s.get('image_url', '') or a.get('image', ''), 'inbox_id': s.get('inbox_id', ''),
             'ali_url': (x['results'][0]['url'] if x['results'] else ''),
         })
     rows.sort(key=lambda r: -r['score'])

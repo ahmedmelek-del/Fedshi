@@ -4,8 +4,13 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 
-const CATS = ['home-garden', 'kitchen', 'automotive', 'hi', 'pet-supplies', 'baby-products',
-  'electronics', 'sporting-goods', 'office-products', 'lawn-garden', 'toys-and-games', 'wireless'];
+// Override with CATS=a,b,c in the environment.
+const CATS = (process.env.CATS || [
+  'home-garden', 'kitchen', 'automotive', 'hi', 'pet-supplies', 'baby-products',
+  'electronics', 'sporting-goods', 'office-products', 'lawn-garden', 'toys-and-games', 'wireless',
+  // beauty: tools only survive the filters; fashion: accessories only (bags, watches, jewellery boxes).
+  'beauty', 'arts-crafts', 'pc', 'photo', 'fashion',
+].join(',')).split(',').map(s => s.trim()).filter(Boolean);
 
 async function scrapePage(page) {
   for (let i = 0; i < 8; i++) { await page.mouse.wheel(0, 3000); await page.waitForTimeout(700); }

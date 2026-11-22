@@ -96,6 +96,23 @@ main .wrap { padding-block: 16px 40px; display: grid; gap: 12px; }
 .reasons input { width: 100%; font: 14px var(--font-body); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
 .decided { font-size: 12px; color: var(--muted); }
 .reasons .opts button.hint { border-style: dashed; border-color: var(--muted); }
+.addbox { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.addbox summary { cursor: pointer; font-weight: 600; font-size: 15px; }
+.addbox summary span { font-weight: 400; color: var(--muted); font-size: 13px; }
+.addbox form { display: grid; gap: 10px; padding-top: 12px; }
+.addbox .fld { display: grid; gap: 4px; min-width: 0; }
+.addbox .fld span { font-size: 12px; color: var(--muted); }
+.addbox input[type="url"], .addbox input[type="text"] { width: 100%; font: 14px var(--font-body); padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.addbox input[type="file"] { font: 13px var(--font-body); color: var(--muted); max-width: 100%; }
+.addbox button { justify-self: start; font: 600 14px var(--font-body); padding: 10px 16px; min-height: 44px; border-radius: 8px; border: 0; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+.addbox button:disabled { opacity: .55; }
+.addbox .fine { margin: 0; font-size: 12px; color: var(--muted); }
+.addbox .fine[data-tone="err"] { color: var(--stop); }
+.inbox { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.inbox li { font-size: 13px; display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.inbox li a { color: var(--accent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
+.inbox li .tag { flex: none; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--chip); color: var(--muted); }
+.inbox li .tag.done { background: var(--go-soft); color: var(--go); }
 .send { display: grid; gap: 8px; padding: 12px; border-radius: 8px; background: var(--go-soft); }
 .send.done { background: var(--go-soft); }
 .send .sendhead { margin: 0; font-weight: 600; font-size: 14px; }
@@ -147,6 +164,20 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 
 <main>
   <div class="wrap">
+    <details class="addbox" id="addbox">
+      <summary>Add an item you found <span id="inboxCount"></span></summary>
+      <form id="addForm" novalidate>
+        <label class="fld" for="addUrl"><span>Link (TikTok, Instagram, Adspyre, Tradelle, Amazon, AliExpress, 1688…)</span>
+          <input type="url" id="addUrl" inputmode="url" placeholder="https://…" autocomplete="off"></label>
+        <label class="fld" for="addNote"><span>What is it, or why it caught your eye (optional)</span>
+          <input type="text" id="addNote" placeholder="e.g. 40k likes, no Iraqi pages selling it"></label>
+        <label class="fld" for="addPhoto"><span>Screenshot or photo (optional)</span>
+          <input type="file" id="addPhoto" accept="image/*"></label>
+        <button type="submit" id="addBtn">Add to tomorrow's run</button>
+        <p class="fine" id="addMsg" role="status">Tomorrow's 7:30 run looks up the China price and freight, scores it, and adds it to your queue.</p>
+      </form>
+      <ul class="inbox" id="inboxList"></ul>
+    </details>
     <div class="status" id="status">Loading this week's shortlist…</div>
     <div id="list"></div>
     <section class="export" id="export" hidden>
@@ -239,7 +270,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
     const approved = state.items.filter(it => statusOf(it.id) === "approved");
     $("export").hidden = approved.length === 0;
     $("exportText").value = approved.map((it, i) =>
-      `${i + 1}. ${it.name}\n   Ref: ${it.amazon_url}\n   Max factory price: $${Number(it.max_cost_usd).toFixed(2)} per unit (air ${fmt(it.freight_iqd)} IQD, ${it.freight_type})` +
+      `${i + 1}. ${it.name}\n   Ref: ${it.amazon_url || it.source_url || ""}\n   Max factory price: $${Number(it.max_cost_usd).toFixed(2)} per unit (air ${fmt(it.freight_iqd)} IQD, ${it.freight_type})` +
       (state.decisions[it.id] && state.decisions[it.id].note ? `\n   Note: ${state.decisions[it.id].note}` : "")
     ).join("\n");
   }
@@ -272,6 +303,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
         el("span", { class: "score", "aria-label": "Score " + it.score + " of 100" }, String(it.score), el("small", { text: "/100" }))
       ),
       el("div", { class: "chips" },
+        it.batch ? el("span", { class: "chip", text: "added " + new Date(it.batch + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) }) : null,
         el("span", { class: "chip", text: "wow " + it.wow + "/5" }),
         el("span", { class: "chip", text: "mass " + it.mass + "/5" }),
         el("span", { class: "chip", text: "open in Iraq " + it.open + "/5" }),
@@ -286,9 +318,10 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
       ),
       el("p", { class: "note", text: it.note }),
       el("div", { class: "links" },
-        el("a", { href: it.amazon_url, target: "_blank", rel: "noopener", text: "Amazon listing" }),
+        it.amazon_url ? el("a", { href: it.amazon_url, target: "_blank", rel: "noopener", text: "Amazon listing" }) : null,
+        it.source_url ? el("a", { href: it.source_url, target: "_blank", rel: "noopener", text: "Where you found it" }) : null,
         it.ali_url ? el("a", { href: it.ali_url, target: "_blank", rel: "noopener", text: "AliExpress match" }) : null,
-        el("span", { class: "decided", text: "Amazon reviews " + fmt(it.amazon_reviews) + " · AliExpress top " + fmt(it.ali_top_sold) + " sold" })
+        el("span", { class: "decided", text: [it.source_label || "", it.amazon_reviews != null ? "Amazon reviews " + fmt(it.amazon_reviews) : "", it.ali_top_sold ? "AliExpress top " + fmt(it.ali_top_sold) + " sold" : ""].filter(Boolean).join(" · ") })
       )
     );
     const actions = el("div", { class: "actions" });
@@ -361,7 +394,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
     if (!name) { sendErrors[it.id] = "Add an item name."; render(); return; }
     if (!(min > 0 && max > 0 && min <= max)) { sendErrors[it.id] = "Set a landed price range where the lowest is not above the highest."; render(); return; }
     const key = "funnel:" + it.id + ":" + (it.week || "");
-    const proof = "Product funnel " + (it.week || "") + " · " + (it.source || "") + " · " + it.amazon_url + " · " + key;
+    const proof = "Product funnel " + (it.week || "") + " · " + (it.source || "") + " · " + (it.amazon_url || it.source_url || "") + " · " + key;
     const like = "%" + key + "%";
     const sql =
       "with ins as (insert into public.item_requests (raised_name, image_url, submitted_by, is_international, requested_landed_min_iqd, requested_landed_max_iqd, expected_quality, requested_shipping_mode, proof_of_success) " +
@@ -481,8 +514,48 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
     } else { ta.focus(); ta.select(); }
   });
 
+  // ---- Inbox: items Ahmed adds by hand; the daily run enriches and scores them ----
+  let assets = null;
+  function renderInbox(rows) {
+    const list = $("inboxList");
+    list.replaceChildren();
+    const pending = rows.filter(r => r.status !== "done");
+    $("inboxCount").textContent = pending.length ? "· " + pending.length + " waiting for the next run" : "";
+    rows.slice(0, 15).forEach(r => {
+      const label = r.url || r.note || "Photo";
+      const link = r.url ? el("a", { href: r.url, target: "_blank", rel: "noopener", text: label }) : el("span", { text: label });
+      list.append(el("li", {}, el("span", { class: "tag" + (r.status === "done" ? " done" : ""), text: r.status === "done" ? "in queue" : r.status === "skipped" ? "not usable" : "waiting" }), link));
+    });
+  }
+  $("addForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const msg = $("addMsg"), btn = $("addBtn");
+    const url = $("addUrl").value.trim(), note = $("addNote").value.trim(), file = $("addPhoto").files[0];
+    if (!url && !file) { msg.textContent = "Paste a link or add a photo."; msg.dataset.tone = "err"; return; }
+    if (url && !/^https?:\/\//i.test(url)) { msg.textContent = "The link should start with https://"; msg.dataset.tone = "err"; return; }
+    if (!db) { msg.textContent = "Sign in to claude.ai to add items."; msg.dataset.tone = "err"; return; }
+    btn.disabled = true; delete msg.dataset.tone; msg.textContent = "Adding…";
+    try {
+      let image = null;
+      if (file) {
+        if (!assets) throw { code: "no_assets" };
+        const up = await assets.upload(file);
+        image = { id: up.id, url: up.url };
+      }
+      await db.collection("inbox").add({ url: url || null, note, image, status: "new", by: state.uid || null, at: new Date().toISOString() });
+      $("addUrl").value = ""; $("addNote").value = ""; $("addPhoto").value = "";
+      msg.textContent = "Added. It will be in your queue after the next 7:30 run.";
+    } catch (err) {
+      msg.dataset.tone = "err";
+      msg.textContent = err && err.code === "no_assets" ? "Photos can't be uploaded from this view. Add the link instead." :
+        err && err.code === "quota_exceeded" ? "The page's storage is full. Tell Claude to clear old items." :
+        "Couldn't add it. Check your connection and try again.";
+    } finally { btn.disabled = false; }
+  });
+
   async function start() {
     render();
+    claude.use("assets").then(a => { assets = a; }).catch(() => {});
     claude.use("mcp").then(m => { mcp = m; render(); }).catch(() => {});
     db = await claude.use("db");
     if (!db) { setStatus("Sign in to claude.ai to see and review this week's shortlist.", "warn"); return; }
@@ -494,13 +567,16 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
     let gotItems = false;
     const timer = setTimeout(() => { if (!gotItems) setStatus("The shortlist can't be reached yet. It will appear when the connection comes back.", "warn"); }, 10000);
     db.collection("items").onSnapshot(snap => {
-      state.items = snap.docs.map(d => Object.assign({ id: d.id }, d.data())).sort((a, b) => a.rank - b.rank);
+      state.items = snap.docs.map(d => Object.assign({ id: d.id }, d.data())).sort((a, b) => String(b.batch || "").localeCompare(String(a.batch || "")) || a.rank - b.rank);
       if (!snap.metadata.fromCache) { gotItems = true; clearTimeout(timer); }
       const wk = state.items[0] && state.items[0].week;
       if (wk) $("week").textContent = "Batch for Sat " + new Date(wk + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" });
       setStatus(state.items.length ? (state.canWrite ? "" : "View only: you can't record decisions on this list.") : (gotItems ? "No shortlist yet. Claude adds this week's items here after each funnel run." : "Loading this week's shortlist…"), state.canWrite ? null : "warn");
       render();
     }, () => { clearTimeout(timer); setStatus("The shortlist couldn't load. Reopen the page to try again.", "warn"); });
+    db.collection("inbox").orderBy("at", "desc").limit(50).onSnapshot(snap => {
+      renderInbox(snap.docs.map(d => Object.assign({ id: d.id }, d.data())));
+    }, () => {});
     db.collection("decisions").onSnapshot(snap => {
       const m = {};
       snap.docs.forEach(d => { m[d.id] = d.data(); });
