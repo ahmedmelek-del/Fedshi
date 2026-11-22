@@ -63,6 +63,8 @@ main .wrap { padding-block: 16px 40px; display: grid; gap: 12px; }
 .card[data-status="later"] { border-left-color: var(--wait); }
 .card[data-status="none"] { border-left-color: var(--line); }
 .head { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: start; }
+.photo { display: block; width: 100%; max-width: 100%; aspect-ratio: 4 / 3; object-fit: contain; background: #ffffff; border-radius: 8px; border: 1px solid var(--line); }
+.photo.none { display: grid; place-items: center; color: var(--muted); font-size: 13px; background: var(--chip); }
 .rank { font: 500 13px var(--font-data); color: var(--muted); padding-top: 2px; }
 .name { font-weight: 600; font-size: 16px; min-width: 0; text-wrap: balance; }
 .score { font: 600 14px var(--font-data); background: var(--chip); padding: 2px 8px; border-radius: 6px; font-variant-numeric: tabular-nums; }
@@ -198,7 +200,11 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
     const flags = (it.flags || "").split(",").map(s => s.trim()).filter(Boolean);
     const maxCost = Number(it.max_cost_usd);
     const c = el("article", { class: "card", "data-status": st, "aria-label": it.name });
+    const photo = it.image
+      ? el("img", { class: "photo", src: it.image, alt: it.name, loading: "lazy" })
+      : el("div", { class: "photo none", text: "No photo yet" });
     c.append(
+      photo,
       el("div", { class: "head" },
         el("span", { class: "rank", text: "#" + it.rank }),
         el("div", { class: "name", text: it.name }),
