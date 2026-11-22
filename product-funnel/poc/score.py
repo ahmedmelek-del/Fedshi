@@ -86,6 +86,12 @@ def main():
             flags.append('over 2 kg volume')
         if s['battery']:
             flags.append('battery')
+        rng = ali_range(x)
+        maxc = max_factory_usd(freight)
+        if maxc <= 0:
+            flags.append('too heavy for the 75k price')
+        elif rng and rng[0] * 0.4 > maxc:  # 1688 factory price is roughly 40% of AliExpress retail seen from the US
+            flags.append('factory price likely above max')
         if 'March' in s['note']:
             flags.append('seasonal: later')
 

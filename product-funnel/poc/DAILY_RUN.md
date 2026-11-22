@@ -49,10 +49,9 @@ python3 seed.py <batch-date> 50
 The ranked order comes from `score.py`. `seed.py` writes `out/seed/manifest.json`, one item JSON per doc and photos, and appends the ASINs to `data/seen_asins.txt`.
 
 ## 6. Publish to the review page
-- **Photos:** `Artifact` publish with `url` = the review page, `asset: true`, `file_paths` = the manifest photos (at most 25 per call). For inbox items that already have an uploaded photo, reuse its id.
-- **Items:** `ArtifactData batch` with at most 50 writes. Each is `op: "set"`, `collection: "items"`, `doc_id`, `file_path` = the item file.
-  - Before sending, add `"image": "/_blob/<id>"` and `"image_id": "<id>"` to each item file.
-  - Never overwrite an existing doc: skip any `doc_id` already in `items`.
+- **Photos:** `Artifact` publish with `url` = the review page, `asset: true`, `file_paths` = the manifest photos (at most 25 per call; paths relative to `product-funnel/poc`). Save the returned `{photo path: asset id}` map as `out/seed/assets.json`, then run `python3 attach_images.py out/seed/assets.json`. It writes `image`/`image_id` into the item files and prints the batch writes; use absolute `file_path`s. For inbox items that already have an uploaded photo, reuse its id.
+- **Instagram links:** `node scrapers/link_preview.js '[{"id","url"}]' data/inbox_previews.json` reads the public caption and image. Download the image with `curl -H "Referer: https://www.instagram.com/"`. Its server varies (`scontent-<region>.cdninstagram.com`); if a host is refused, use the uploaded screenshot or skip the photo.
+- **Items:** `ArtifactData batch` with at most 50 writes, using the writes from `attach_images.py`. Never overwrite an existing doc: skip any `doc_id` already in `items`.
 - Read back one page of `items` to confirm the batch is there.
 
 ## 7. Save and report
