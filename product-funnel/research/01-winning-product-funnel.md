@@ -1,11 +1,15 @@
 # Part 1: Automated "Winning Product" Funnel (research and brainstorm)
 
+**Where this fits:** this automates **step 1 (Requests)** of the weekly international sourcing flow in [`docs/handoff-2026-11-15-international-sourcing.md`](../../docs/handoff-2026-11-15-international-sourcing.md): Requests → Quotations → Filter → Ghost test → PRs. Its job is to supply **30–50 requests a week** (Sat + Sun batches) and to raise the ghost-test success rate from **~25% toward 33%+**. That lift alone closes the gap from 7–8 to 10 PRs/week without adding testers. All of this serves the OKR of 100+ winners by end of 2026 (winner = 100+ orders in 30 days).
+
 **Goal:** a steady, ranked stream of products that are commercially proven, can be sourced from China, and haven't yet saturated our market. It should replace hand-picking in Adspyre and Tradelle without losing the judgement that made the hand-picking work.
 
 > **Decisions (2026-11-22):**
 > - **Market:** Iraq only, with COD. Syria possibly later. Gulf, US and China count only as *upstream* signals.
 > - **Products:** dropshipping-suitable only. **Excluded:** clothing/sized items, liquids/cosmetics, fragile items. Battery/electronics are allowed but flagged.
-> - **Winner rule:** must pass **both** a CPA ceiling (set relative to each product's margin) **and** a minimum orders/day. Exact numbers to be set later from our own test data.
+> - **Winner rule:** already defined by the international ghost test. **15+ placed orders AND net ROAS ≥ 3**, where net ROAS = orders × profit/order ($) × 0.7 ÷ spend, at $20/day for max 3 days. The final business winner is 100+ orders in 30 days. The funnel learns from these two outcomes.
+> - **Margin floor:** ~20,000 IQD profit per order (to confirm). Items under ~18,300 IQD can't run 2 full test days.
+> - **Shipping:** air freight only (15–25 days), light items only, judged by volume weight = L×W×H ÷ 5000. The max limit is still to be set.
 > - **Data budget:** under $100/month.
 > - **Adspyre / Tradelle:** no confirmed export/API, so they stay a manual input (or a light scrape) for now.
 > - **China account:** none, so Douyin tools and the official 1688 API are out for now. Use third-party 1688 image search.
@@ -78,7 +82,8 @@ Douyin tools (Chanmama/Feigua) are deferred until we have a Chinese account.
                          ▼
  4. SCORE  (0–100, weights tuned over time)
                          ▼
- 5. DAILY FEED — top 20 product cards on phone → ✅ / ❌ / ⏳ + reason
+ 5. WEEKLY BATCH — ranked cards on phone (Fri/Sat) → ✅ / ❌ / ⏳ + reason
+    → approved items become the Sat + Sun requests (30–50/week) to the buyer
                          ▼
  6. LEARN — your decisions + real sales results retrain the weights
 ```
@@ -98,7 +103,9 @@ Douyin tools (Chanmama/Feigua) are deferred until we have a Chinese account.
 | **Sourcing ease** | # of 1688 suppliers, MOQ, price spread | Fast restock, negotiation room |
 | **Policy** | Meta/TikTok METAP ad policy, local customs bans | Avoid dead ends |
 
-Hard filters run first (policy, shipping fit, min margin). Everything else is weighted.
+Hard filters run first (policy, excluded categories, volume weight under the air limit, **estimated profit/order ≥ ~20,000 IQD**). Everything else is weighted.
+
+**Estimated profit per order** = expected Iraq selling price − (1688 unit cost + air freight by volume weight + last-mile/COD fees), all in IQD at 1,600 IQD/$. The funnel uses the 1688 price only as an estimate. The buyer's factory quotations (step 2) remain the real number.
 
 ---
 
@@ -107,7 +114,7 @@ Hard filters run first (policy, shipping fit, min margin). Everything else is we
 Your manual selection is the thing to preserve, not replace:
 - Every ✅/❌ in the daily feed is stored **with a short reason** ("too saturated", "fragile", "no wow").
 - After roughly 300–500 decisions, those labels tune the score weights, or train a small classifier on top of the features plus image embeddings. The system learns *your* taste.
-- Later, attach **actual results** (test-ad CTR, CPA, orders, return rate) to each approved product. Then the model learns what *sells*, not only what you liked.
+- Later, attach **actual results** to each approved product: the **ghost-test verdict** from the calculator (winner/loser, orders, net ROAS, the stop reason), then whether it reached **100+ orders in 30 days**. Then the model learns what *sells*, not only what you liked.
 - The Instagram account becomes one more labelled source: whatever you save counts as a positive.
 
 ---
@@ -122,8 +129,10 @@ Your manual selection is the thing to preserve, not replace:
 ---
 
 ## 6. Still open
-- Exact winner thresholds (CPA as a % of margin, minimum orders/day): to be set from our own test data.
-- Target selling-price range in Iraq.
+- Confirm the margin floor (~20,000 IQD profit/order). Shared with the sourcing plan.
+- Set the air-freight limit (max volume weight). Shared with the sourcing plan.
+- Target selling-price range in Iraq (needed for the profit estimate).
+- Where past ghost-test results live (Reseller Reserve Hub?), so they can seed the learning loop.
 
 ---
 
