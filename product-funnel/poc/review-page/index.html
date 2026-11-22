@@ -95,6 +95,19 @@ main .wrap { padding-block: 16px 40px; display: grid; gap: 12px; }
 .reasons .opts.go button[aria-pressed="true"] { background: var(--go-soft); border-color: var(--go); color: var(--go); }
 .reasons input { width: 100%; font: 14px var(--font-body); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
 .decided { font-size: 12px; color: var(--muted); }
+.reasons .opts button.hint { border-style: dashed; border-color: var(--muted); }
+.send { display: grid; gap: 8px; padding: 12px; border-radius: 8px; background: var(--go-soft); }
+.send.done { background: var(--go-soft); }
+.send .sendhead { margin: 0; font-weight: 600; font-size: 14px; }
+.send .sent { margin: 0; font-size: 14px; color: var(--go); font-weight: 500; }
+.send .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.send .fld { display: grid; gap: 3px; min-width: 0; }
+.send .fld span { font-size: 12px; color: var(--muted); }
+.send input, .send select { width: 100%; min-width: 0; font: 14px var(--font-body); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.send .fine { margin: 0; font-size: 12px; color: var(--muted); }
+.send .sendbtn { font: 600 14px var(--font-body); padding: 11px 14px; min-height: 44px; border-radius: 8px; border: 0; background: var(--go); color: var(--surface); cursor: pointer; }
+.send .sendbtn:disabled { opacity: .55; cursor: default; }
+.send .err { margin: 0; font-size: 13px; color: var(--stop); }
 button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .export { display: grid; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
 .export h2 { margin: 0; font-size: 15px; }
@@ -127,6 +140,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
       <button type="button" data-filter="approved" aria-pressed="false">Approved</button>
       <button type="button" data-filter="later" aria-pressed="false">Later</button>
       <button type="button" data-filter="rejected" aria-pressed="false">Skipped</button>
+      <button type="button" data-filter="reason" aria-pressed="false">Needs a reason (<span id="nReason">0</span>)</button>
     </div>
   </div>
 </header>
@@ -146,8 +160,50 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 
 <script>
 (() => {
-  const REJECT_REASONS = ["Already common in Iraq", "No wow factor", "Margin too thin", "Shipping or battery risk", "Not right for Iraq", "Weak upstream proof"];
-  const APPROVE_REASONS = ["Strong demo", "Problem-solver", "Open market here", "Seasonal timing"];
+  // Reason codes are stable keys: each maps to an item feature a future rule or model can learn from.
+  const REJECT_REASONS = [
+    ["saturated", "Already common in Iraq"],
+    ["no_wow", "No wow, hard to demo"],
+    ["low_value", "Looks cheap for 35k+"],
+    ["margin", "Margin too thin"],
+    ["shipping", "Battery, size or fragile risk"],
+    ["niche", "Too niche for Iraq"],
+    ["culture", "Cultural or legal fit"],
+    ["returns", "Quality or return risk"],
+    ["season", "Wrong season"],
+    ["weak_proof", "Weak proof it sells"],
+  ];
+  const APPROVE_REASONS = [
+    ["demo", "Strong demo video"],
+    ["problem", "Solves a daily problem"],
+    ["open", "Not common in Iraq yet"],
+    ["mass", "Mass appeal"],
+    ["season", "Right season"],
+    ["gift", "Good gift"],
+    ["value", "Looks worth the price"],
+  ];
+  const REASON_LABEL = Object.fromEntries([...REJECT_REASONS, ...APPROVE_REASONS]);
+  // Suggested reasons from the item's own scores and flags, so tapping one confirms a pattern.
+  function suggest(it, status) {
+    const s = new Set();
+    const flags = it.flags || "";
+    if (status === "rejected") {
+      if (it.open <= 2) s.add("saturated");
+      if (it.wow <= 3) s.add("no_wow");
+      if (it.mass <= 3) s.add("niche");
+      if (/battery|kg/.test(flags)) s.add("shipping");
+      if (/seasonal/.test(flags)) s.add("season");
+      if (Number(it.max_cost_usd) <= 5) s.add("margin");
+    } else if (status === "approved") {
+      if (it.video >= 5) s.add("demo");
+      if (it.open >= 4) s.add("open");
+      if (it.mass >= 4) s.add("mass");
+      if (/winter|summer|season|timing/i.test(it.note || "")) s.add("season");
+    }
+    return s;
+  }
+  const SUBMITTER_ID = "3bab3426-396f-407b-88e2-85527cee3f3b"; // Ahmed's Commercial Platform user
+  const LANDED_MIN = 11700, LANDED_MAX = 25000;
   const STATUS_LABEL = { approved: "Approved", rejected: "Skipped", later: "Later" };
   const state = { items: [], decisions: {}, filter: "open", canWrite: true, uid: null, openReason: null };
   const $ = id => document.getElementById(id);
@@ -163,6 +219,10 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
   }
 
   function statusOf(id) { return (state.decisions[id] && state.decisions[id].status) || "none"; }
+  function needsReason(it) {
+    const st = statusOf(it.id), d = state.decisions[it.id] || {};
+    return (st === "rejected" || st === "approved") && !(d.reasons && d.reasons.length) && !(d.note && d.note.trim());
+  }
 
   function renderCounts() {
     const c = { approved: 0, rejected: 0, later: 0, none: 0 };
@@ -171,6 +231,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
     $("nRejected").textContent = c.rejected;
     $("nLater").textContent = c.later;
     $("nOpen").textContent = c.none;
+    $("nReason").textContent = state.items.filter(needsReason).length;
     const goal = 30, total = Math.max(goal, state.items.length);
     $("meterFill").style.width = (c.approved / total * 100) + "%";
     $("meterGoal").style.left = (goal / total * 100) + "%";
@@ -242,11 +303,13 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
     if ((st === "rejected" || st === "approved") && state.canWrite) {
       const list = st === "rejected" ? REJECT_REASONS : APPROVE_REASONS;
       const chosen = new Set(d.reasons || []);
+      const hint = suggest(it, st);
       const opts = el("div", { class: "opts" + (st === "approved" ? " go" : "") });
-      list.forEach(r => {
-        const b = el("button", { type: "button", "aria-pressed": String(chosen.has(r)), text: r });
+      list.forEach(([code, label]) => {
+        const b = el("button", { type: "button", "aria-pressed": String(chosen.has(code)), text: label });
+        if (!chosen.has(code) && hint.has(code)) b.classList.add("hint");
         b.addEventListener("click", () => {
-          chosen.has(r) ? chosen.delete(r) : chosen.add(r);
+          chosen.has(code) ? chosen.delete(code) : chosen.add(code);
           save(it.id, { reasons: [...chosen] });
         });
         opts.append(b);
@@ -256,13 +319,105 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
       let t;
       note.addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => save(it.id, { note: note.value.trim() }), 700); });
       c.append(el("div", { class: "reasons" },
-        el("p", { text: st === "rejected" ? "Why skip it? This teaches the scoring." : "What makes it a good request?" }),
+        el("p", { text: (st === "rejected" ? "Why skip it?" : "Why request it?") + " Dashed options are suggestions from the item's scores; tap to confirm." }),
         opts, note));
     }
+    if (st === "approved") c.append(sendPanel(it, d));
     if (st !== "none" && d.at) {
       c.append(el("span", { class: "decided", text: STATUS_LABEL[st] + " " + new Date(d.at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) }));
     }
     return c;
+  }
+
+  // ---- Send an approved item to the Commercial Platform as an International Request ----
+  let mcp = null;
+  const sending = new Set();
+  const sendErrors = {};
+
+  function sqlText(v) {
+    // Dollar-quote with a tag that can't appear in the value.
+    const s = String(v ?? "");
+    let tag = "f" + Math.random().toString(36).slice(2, 8);
+    while (s.includes("$" + tag + "$")) tag += "x";
+    return "$" + tag + "$" + s + "$" + tag + "$";
+  }
+  function parseRows(payload) {
+    if (Array.isArray(payload)) return payload;
+    const text = typeof payload === "string" ? payload : (payload && typeof payload.result === "string" ? payload.result : JSON.stringify(payload || ""));
+    const m = text.match(/<untrusted-data-[^>]*>\s*([\s\S]*?)\s*<\/untrusted-data/);
+    const body = m ? m[1] : text;
+    try { const j = JSON.parse(body); return Array.isArray(j) ? j : []; } catch (e) {}
+    const a = body.indexOf("["), b = body.lastIndexOf("]");
+    if (a >= 0 && b > a) { try { return JSON.parse(body.slice(a, b + 1)); } catch (e) {} }
+    return [];
+  }
+
+  async function sendToPlatform(it, form) {
+    if (!mcp || sending.has(it.id)) return;
+    const name = form.name.trim();
+    const min = parseInt(form.min, 10), max = parseInt(form.max, 10);
+    const quality = ["low", "medium", "high"].includes(form.quality) ? form.quality : null;
+    const ship = ["air", "sea", "land"].includes(form.ship) ? form.ship : null;
+    if (!name) { sendErrors[it.id] = "Add an item name."; render(); return; }
+    if (!(min > 0 && max > 0 && min <= max)) { sendErrors[it.id] = "Set a landed price range where the lowest is not above the highest."; render(); return; }
+    const key = "funnel:" + it.id + ":" + (it.week || "");
+    const proof = "Product funnel " + (it.week || "") + " · " + (it.source || "") + " · " + it.amazon_url + " · " + key;
+    const like = "%" + key + "%";
+    const sql =
+      "with ins as (insert into public.item_requests (raised_name, image_url, submitted_by, is_international, requested_landed_min_iqd, requested_landed_max_iqd, expected_quality, requested_shipping_mode, proof_of_success) " +
+      "select " + sqlText(name) + ", " + sqlText(it.image_src || "") + ", '" + SUBMITTER_ID + "'::uuid, true, " + min + ", " + max + ", " +
+      (quality ? sqlText(quality) : "null") + ", " + (ship ? sqlText(ship) + "::shipping_mode" : "null") + ", " + sqlText(proof) + " " +
+      "where not exists (select 1 from public.item_requests where proof_of_success like " + sqlText(like) + ") returning id, ticket_id) " +
+      "select id, ticket_id, true as created from ins union all " +
+      "select id, ticket_id, false as created from public.item_requests where proof_of_success like " + sqlText(like) + " and not exists (select 1 from ins)";
+    sending.add(it.id); delete sendErrors[it.id]; render();
+    try {
+      const res = await mcp.callTool("Supabase", "execute_sql", { project_id: "rndbaaladvmgpbsecxba", query: sql }, { cache: false });
+      const rows = parseRows(res.payload);
+      const row = rows[0];
+      if (!row || !row.id) throw { code: "tool_error", message: "The platform didn't return a ticket." };
+      await save(it.id, { sent: { request_id: row.id, ticket_id: row.ticket_id || "", at: new Date().toISOString(), already_existed: row.created === false, name, min, max, quality, ship } });
+    } catch (e) {
+      const code = e && e.code;
+      sendErrors[it.id] =
+        code === "server_not_connected" ? "Add the Supabase connector in claude.ai Settings → Connectors, then try again." :
+        code === "needs_reauth" ? "Reconnect Supabase in claude.ai Settings → Connectors, then try again." :
+        code === "not_in_manifest" || code === "approval_required" ? "This page needs your OK to use Supabase. Tap Send again and allow it." :
+        code === "tool_error" ? "The platform refused the request: " + String(e.message || "").slice(0, 200) :
+        code === "server_unavailable" || code === "upstream_error" ? "No answer from Supabase. It may have been created. Tap Send again: it won't make a duplicate." :
+        "Couldn't send it (" + (code || "error") + "). Tap Send again; it won't make a duplicate.";
+    } finally { sending.delete(it.id); render(); }
+  }
+
+  function sendPanel(it, d) {
+    const box = el("div", { class: "send" });
+    if (d.sent && d.sent.request_id) {
+      box.classList.add("done");
+      box.append(el("p", { class: "sent", text: "Sent to Commercial Platform as " + (d.sent.ticket_id || "an international request") + (d.sent.already_existed ? " (it was already there)" : "") + " · " + fmt(d.sent.min) + "–" + fmt(d.sent.max) + " IQD landed · " + (d.sent.quality || "any") + " quality · " + (d.sent.ship || "any") + " shipping" }));
+      return box;
+    }
+    const f = { name: it.name, min: String(LANDED_MIN), max: String(LANDED_MAX), quality: "medium", ship: "air" };
+    const name = el("input", { type: "text", id: "send-name-" + it.id }); name.value = f.name;
+    const min = el("input", { type: "number", id: "send-min-" + it.id }); min.value = f.min; min.min = "0";
+    const max = el("input", { type: "number", id: "send-max-" + it.id }); max.value = f.max; max.min = "0";
+    const sel = (id, opts, v) => { const s = el("select", { id }); opts.forEach(([val, lab]) => { const o = el("option", { text: lab }); o.value = val; s.append(o); }); s.value = v; return s; };
+    const q = sel("send-q-" + it.id, [["medium", "Medium"], ["high", "High"], ["low", "Low"], ["none", "No preference"]], f.quality);
+    const sh = sel("send-s-" + it.id, [["air", "Air"], ["sea", "Sea"], ["land", "Land"], ["none", "No preference"]], f.ship);
+    const lab = (t, n) => el("label", { class: "fld" }, el("span", { text: t }), n);
+    const btn = el("button", { type: "button", class: "sendbtn", text: sending.has(it.id) ? "Sending…" : "Send as International Request" });
+    btn.disabled = !mcp || sending.has(it.id) || !state.canWrite;
+    btn.addEventListener("click", () => sendToPlatform(it, { name: name.value, min: min.value, max: max.value, quality: q.value, ship: sh.value }));
+    box.append(
+      el("p", { class: "sendhead", text: "Commercial Platform request" }),
+      lab("Item name", name),
+      el("div", { class: "row2" }, lab("Lowest landed (IQD)", min), lab("Highest landed (IQD)", max)),
+      el("div", { class: "row2" }, lab("Expected quality", q), lab("Shipping", sh)),
+      el("p", { class: "fine", text: "The Amazon photo and link go with it. Landed = China price + freight per piece in Iraq." }),
+      btn
+    );
+    if (!mcp) box.append(el("p", { class: "err", text: "Sending needs the Supabase connector, which this view can't reach. Open the page in claude.ai with Supabase connected." }));
+    if (sendErrors[it.id]) box.append(el("p", { class: "err", role: "alert", text: sendErrors[it.id] }));
+    return box;
   }
 
   function render() {
@@ -270,20 +425,25 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
     const list = $("list");
     // Keep the cursor in a note box when a save or live update re-renders the list.
     const act = document.activeElement;
-    const keep = act && act.id && act.id.startsWith("note-") ? { id: act.id, value: act.value, s: act.selectionStart, e: act.selectionEnd } : null;
+    const keep = act && act.id && /^(note-|send-)/.test(act.id) ? { id: act.id, value: act.value, s: act.selectionStart, e: act.selectionEnd } : null;
+    // Keep typed values in other send forms too.
+    const typed = {};
+    document.querySelectorAll(".send input, .send select").forEach(n => { if (n.id) typed[n.id] = n.value; });
     list.replaceChildren();
     const shown = state.items.filter(it => {
       const st = statusOf(it.id);
+      if (state.filter === "reason") return needsReason(it);
       return state.filter === "all" || (state.filter === "open" ? st === "none" : st === state.filter);
     });
     if (state.items.length && !shown.length) {
-      list.append(el("p", { class: "empty", text: state.filter === "open" ? "Everything is reviewed. Check the Approved tab for the buyer's list." : "Nothing here yet." }));
+      list.append(el("p", { class: "empty", text: state.filter === "open" ? "Everything is reviewed. Check the Approved tab to send requests." : state.filter === "reason" ? "Every decision has a reason. Thanks, that's what trains the filter." : "Nothing here yet." }));
     }
     const frag = document.createDocumentFragment();
     shown.forEach(it => frag.append(card(it)));
     list.append(frag);
     list.style.display = "grid";
     list.style.gap = "12px";
+    for (const [id, v] of Object.entries(typed)) { const n = document.getElementById(id); if (n) n.value = v; }
     if (keep) {
       const n = document.getElementById(keep.id);
       if (n) { n.value = keep.value; n.focus(); try { n.setSelectionRange(keep.s, keep.e); } catch (e) {} }
@@ -323,6 +483,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 
   async function start() {
     render();
+    claude.use("mcp").then(m => { mcp = m; render(); }).catch(() => {});
     db = await claude.use("db");
     if (!db) { setStatus("Sign in to claude.ai to see and review this week's shortlist.", "warn"); return; }
     const user = await claude.use("user");
