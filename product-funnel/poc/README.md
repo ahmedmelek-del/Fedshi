@@ -13,3 +13,7 @@ python3 score.py                                                           # →
 Sources that worked from the cloud session: Amazon Hot New Releases and AliExpress search.
 Blocked: Meta Ad Library (403 to automated browsers), TikTok Creative Center Top Products (needs login),
 and Amazon Movers & Shakers (empty for headless browsers). Add those from manual exports.
+
+## Phone review page
+
+`review-page/index.html` is published at https://claude.ai/artifact/6HsPNRAAxKCWRH5XADyJxN. The items come from the artifact store (`items` collection, seeded from `out/ranked.csv`). Decisions are saved to `decisions/<item-id>` as {status, reasons, note, by, at}. Claude reads them back to tune the scoring.
