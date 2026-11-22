@@ -8,8 +8,10 @@
 > - **Market:** Iraq only, with COD. Syria possibly later. Gulf, US and China count only as *upstream* signals.
 > - **Products:** dropshipping-suitable only. **Excluded:** clothing/sized items, liquids/cosmetics, fragile items. Battery/electronics are allowed but flagged.
 > - **Winner rule:** already defined by the international ghost test. **15+ placed orders AND net ROAS ≥ 3**, where net ROAS = orders × profit/order ($) × 0.7 ÷ spend, at $20/day for max 3 days. The final business winner is 100+ orders in 30 days. The funnel learns from these two outcomes.
-> - **Margin floor:** ~20,000 IQD profit per order (to confirm). Items under ~18,300 IQD can't run 2 full test days.
-> - **Shipping:** air freight only (15–25 days), light items only, judged by volume weight = L×W×H ÷ 5000. The max limit is still to be set.
+> - **No profit floor (decided 2026-11-22):** the right margin depends on the product, so profit per order is a *scoring factor*, not a hard filter. Spend is controlled at the test level instead: **budget ≈ $50 per tested item on average** across winners and early-stopped losers (e.g. 40 tests ≈ $2,000/week). Note: the calculator still marks items under ~18,300 IQD profit as "low margin", since they can't reach ROAS 3 with 15 orders inside 2 days.
+> - **Shipping:** air freight only (15–25 days). Hard limit: **volume weight (L×W×H ÷ 5000) ≤ 2 kg per unit**.
+> - **Price range:** target Iraq selling price **35,000–75,000 IQD**.
+> - **Learning data:** past ghost-test results live in the **Reseller Reserve Hub** (Lovable/Supabase).
 > - **Data budget:** under $100/month.
 > - **Adspyre / Tradelle:** no confirmed export/API, so they stay a manual input (or a light scrape) for now.
 > - **China account:** none, so Douyin tools and the official 1688 API are out for now. Use third-party 1688 image search.
@@ -103,7 +105,7 @@ Douyin tools (Chanmama/Feigua) are deferred until we have a Chinese account.
 | **Sourcing ease** | # of 1688 suppliers, MOQ, price spread | Fast restock, negotiation room |
 | **Policy** | Meta/TikTok METAP ad policy, local customs bans | Avoid dead ends |
 
-Hard filters run first (policy, excluded categories, volume weight under the air limit, **estimated profit/order ≥ ~20,000 IQD**). Everything else is weighted.
+Hard filters run first: policy, excluded categories, **volume weight ≤ 2 kg**, and an expected selling price that fits **35k–75k IQD**. Everything else is weighted. **Estimated profit/order** is the heaviest weight, with no fixed floor.
 
 **Estimated profit per order** = expected Iraq selling price − (1688 unit cost + air freight by volume weight + last-mile/COD fees), all in IQD at 1,600 IQD/$. The funnel uses the 1688 price only as an estimate. The buyer's factory quotations (step 2) remain the real number.
 
@@ -129,10 +131,8 @@ Your manual selection is the thing to preserve, not replace:
 ---
 
 ## 6. Still open
-- Confirm the margin floor (~20,000 IQD profit/order). Shared with the sourcing plan.
-- Set the air-freight limit (max volume weight). Shared with the sourcing plan.
-- Target selling-price range in Iraq (needed for the profit estimate).
-- Where past ghost-test results live (Reseller Reserve Hub?), so they can seed the learning loop.
+- Access to the Reseller Reserve Hub test data (which tables and fields), to seed the learning loop.
+- Update the sourcing plan doc and interactive plan: remove the ~20,000 IQD floor, add the 2 kg limit and the $50/test average budget.
 
 ---
 
