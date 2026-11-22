@@ -2,32 +2,32 @@
 
 Source run: Amazon Hot New Releases (12 categories, 690 items) → hard filters (257) → manual Fedshi-fit review (22) → AliExpress price/sold check.
 
-| # | Item | Score | Iraq price (IQD) | Max factory cost* | AliExpress range | Vol. kg | Flags |
+| # | Item | Score | Air freight (IQD) | Max factory cost* | AliExpress range | Billed kg | Flags |
 |---|---|---|---|---|---|---|---|
-| 1 | [Suction-cup car dent puller kit](https://www.amazon.com/dp/B0HM312SFS) | 82 | 35,000 | $3.81 | $1–19 | 0.36 |  |
-| 2 | [Self-adhesive silicone door bottom seal (dust/draft stopper)](https://www.amazon.com/dp/B0HC61CXQW) | 82 | 35,000 | $3.49 | $1–1 | 0.3 |  |
-| 3 | [Cordless electric air duster / blower](https://www.amazon.com/dp/B0H4L4J1VC) | 79 | 45,000 | $8.94 | $15–24 | 0.32 | battery |
-| 4 | [Rechargeable pump + vacuum storage bags (travel set)](https://www.amazon.com/dp/B0H6DVC348) | 75 | 35,000 | $0.29 | $3–10 | 0.8 | battery |
-| 5 | [Pure titanium cutting board](https://www.amazon.com/dp/B0HQ5TVGS8) | 75 | 35,000 | none: price too low | $26–40 | 0.45 |  |
-| 6 | [Brushless cordless car vacuum 15,000Pa](https://www.amazon.com/dp/B0HMCPZ8WH) | 74 | 60,000 | $15.11 | $32–36 | 0.72 | battery |
-| 7 | [55-in-1 magnetic precision screwdriver cube](https://www.amazon.com/dp/B0HHDGV4VH) | 74 | 60,000 | $19.11 | $1–3 | 0.14 |  |
-| 8 | [Anti-glare car sun visor extender](https://www.amazon.com/dp/B0HPKLFSX7) | 71 | 35,000 | $3.33 | $7–10 | 0.42 |  |
-| 9 | [Rechargeable magnetic hand warmers (2-pack)](https://www.amazon.com/dp/B0HHHHG1SP) | 68 | 35,000 | $4.29 | $12–20 | 0.14 | battery |
-| 10 | [Rechargeable motion-sensor headlamp](https://www.amazon.com/dp/B0H7WQVJSN) | 66 | 55,000 | $17.59 | ? | 0.15 | battery |
-| 11 | [3-channel 4K dash cam (front, rear, inside)](https://www.amazon.com/dp/B0HPT6HSQQ) | 65 | 50,000 | $12.86 | $81–118 | 0.29 |  |
-| 12 | [Cordless portable baby-bottle warmer](https://www.amazon.com/dp/B0HHHRN2CB) | 65 | 60,000 | $18.31 | $22–37 | 0.4 | battery |
-| 13 | [Rotary hand-crank grater, 3 drums](https://www.amazon.com/dp/B0GWLHYF5M) | 64 | 35,000 | $0.77 | $19–25 | 0.74 |  |
-| 14 | [Galaxy projector night light, 24 films](https://www.amazon.com/dp/B0HLXV2QV4) | 62 | 35,000 | $3.49 | $7–30 | 0.35 |  |
-| 15 | [Green cross-line laser level with tripod](https://www.amazon.com/dp/B0HKRW3KLR) | 61 | 50,000 | $9.66 | $40–74 | 0.6 | battery |
-| 16 | [Telescopic over-sink storage rack](https://www.amazon.com/dp/B0HPSKJR58) | 60 | 35,000 | $2.69 | $23–24 | 0.43 |  |
-| 17 | [Ocean-wave LED mood lamp (rechargeable)](https://www.amazon.com/dp/B0HCY2TKZ8) | 60 | 35,000 | $3.49 | $10–14 | 0.35 | battery |
-| 18 | [Interactive laser/projector toy for cats](https://www.amazon.com/dp/B0HS38P47B) | 60 | 35,000 | $4.29 | $8–10 | 0.29 | battery |
-| 19 | [Rechargeable high-lumen flashlight with LCD (2-pack)](https://www.amazon.com/dp/B0H3KPRD79) | 59 | 35,000 | $2.69 | ? | 0.24 | battery |
-| 20 | [2-in-1 utensil + pot-lid organiser rack](https://www.amazon.com/dp/B0HR1QZ1FZ) | 50 | 35,000 | $1.89 | ? | 0.6 |  |
-| 21 | [Indoor LED bug zapper](https://www.amazon.com/dp/B0H6XCKD52) | 42 | 35,000 | none: price too low | $12–19 | 0.9 | seasonal: later |
-| 22 | [Electric heated blanket throw 127×152cm](https://www.amazon.com/dp/B0H3TQHS1H) | 41 | 45,000 | none: price too low | $15–36 | 2.1 | over 2 kg volume |
+| 1 | [Suction-cup car dent puller kit](https://www.amazon.com/dp/B0HM312SFS) | 82 | 6,300 (normal) | $11.69 | $1–19 | 0.36 |  |
+| 2 | [Self-adhesive silicone door bottom seal (dust/draft stopper)](https://www.amazon.com/dp/B0HC61CXQW) | 82 | 7,000 (normal) | $11.25 | $1–1 | 0.4 |  |
+| 3 | [Cordless electric air duster / blower](https://www.amazon.com/dp/B0H4L4J1VC) | 79 | 11,500 (battery) | $8.44 | $15–24 | 0.5 | battery |
+| 4 | [Rechargeable pump + vacuum storage bags (travel set)](https://www.amazon.com/dp/B0H6DVC348) | 75 | 18,400 (battery) | $4.12 | $3–10 | 0.8 | battery |
+| 5 | [Pure titanium cutting board](https://www.amazon.com/dp/B0HQ5TVGS8) | 75 | 15,800 (normal) | $5.78 | $26–40 | 0.9 |  |
+| 6 | [Brushless cordless car vacuum 15,000Pa](https://www.amazon.com/dp/B0HMCPZ8WH) | 74 | 20,700 (battery) | $2.69 | $32–36 | 0.9 | battery |
+| 7 | [55-in-1 magnetic precision screwdriver cube](https://www.amazon.com/dp/B0HHDGV4VH) | 74 | 7,000 (normal) | $11.25 | $1–3 | 0.4 |  |
+| 8 | [Anti-glare car sun visor extender](https://www.amazon.com/dp/B0HPKLFSX7) | 71 | 7,400 (normal) | $11.03 | $7–10 | 0.42 |  |
+| 9 | [Rechargeable magnetic hand warmers (2-pack)](https://www.amazon.com/dp/B0HHHHG1SP) | 68 | 6,900 (battery) | $11.31 | $12–20 | 0.3 | battery |
+| 10 | [Rechargeable motion-sensor headlamp](https://www.amazon.com/dp/B0H7WQVJSN) | 66 | 4,600 (battery) | $12.75 | ? | 0.2 | battery |
+| 11 | [3-channel 4K dash cam (front, rear, inside)](https://www.amazon.com/dp/B0HPT6HSQQ) | 65 | 7,000 (normal) | $11.25 | $81–118 | 0.4 |  |
+| 12 | [Cordless portable baby-bottle warmer](https://www.amazon.com/dp/B0HHHRN2CB) | 65 | 11,500 (battery) | $8.44 | $22–37 | 0.5 | battery |
+| 13 | [Rotary hand-crank grater, 3 drums](https://www.amazon.com/dp/B0GWLHYF5M) | 64 | 12,900 (normal) | $7.54 | $19–25 | 0.74 |  |
+| 14 | [Galaxy projector night light, 24 films](https://www.amazon.com/dp/B0HLXV2QV4) | 62 | 7,000 (normal) | $11.25 | $7–30 | 0.4 |  |
+| 15 | [Green cross-line laser level with tripod](https://www.amazon.com/dp/B0HKRW3KLR) | 61 | 18,400 (battery) | $4.12 | $40–74 | 0.8 | battery |
+| 16 | [Telescopic over-sink storage rack](https://www.amazon.com/dp/B0HPSKJR58) | 60 | 8,800 (normal) | $10.16 | $23–24 | 0.5 |  |
+| 17 | [Ocean-wave LED mood lamp (rechargeable)](https://www.amazon.com/dp/B0HCY2TKZ8) | 60 | 9,200 (battery) | $9.88 | $10–14 | 0.4 | battery |
+| 18 | [Interactive laser/projector toy for cats](https://www.amazon.com/dp/B0HS38P47B) | 60 | 6,900 (battery) | $11.31 | $8–10 | 0.3 | battery |
+| 19 | [Rechargeable high-lumen flashlight with LCD (2-pack)](https://www.amazon.com/dp/B0H3KPRD79) | 59 | 11,500 (battery) | $8.44 | ? | 0.5 | battery |
+| 20 | [2-in-1 utensil + pot-lid organiser rack](https://www.amazon.com/dp/B0HR1QZ1FZ) | 50 | 10,500 (normal) | $9.06 | ? | 0.6 |  |
+| 21 | [Indoor LED bug zapper](https://www.amazon.com/dp/B0H6XCKD52) | 42 | 15,800 (normal) | $5.78 | $12–19 | 0.9 | seasonal: later |
+| 22 | [Electric heated blanket throw 127×152cm](https://www.amazon.com/dp/B0H3TQHS1H) | 41 | 36,800 (normal) | none | $15–36 | 2.1 | over 2 kg volume |
 
-\* **Max factory cost** = the highest unit price the buyer can accept and still keep ~18,300 IQD profit/order (enough to run a 2-day ghost test): Iraq price − air freight − fees − 18,300 IQD. Give this number to the buyer with each request. The AliExpress range is retail context only, not a cost estimate.
+\* **Price rule:** Iraq price = 3 × landed cost (factory + air freight), kept within 35,000–75,000 IQD. **Max factory cost** is the highest quotation that still fits a 3× price under 75,000 IQD: 25,000 IQD − air freight. Give it to the buyer with each request. When quotations come in, run `python3 quote.py <id> <usd>` for the price and profit. The AliExpress range is retail context only, not a cost estimate.
 
 ## Notes per item
 
@@ -57,8 +57,9 @@ Source run: Amazon Hot New Releases (12 categories, 690 items) → hard filters 
 ## Assumptions
 
 - `iqd_per_usd` = 1600
-- `air_usd_per_kg` = 8.0
+- `air_iqd_per_kg` = {'normal': 17500, 'battery': 23000, 'medical': 26000}
 - `fees_iqd` = 6000
+- `price_multiple` = 3
 - `price_min_iqd` = 35000
 - `price_max_iqd` = 75000
 - `volume_divisor` = 5000
