@@ -96,6 +96,12 @@ main .wrap { padding-block: 16px 40px; display: grid; gap: 12px; }
 .reasons input { width: 100%; font: 14px var(--font-body); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
 .decided { font-size: 12px; color: var(--muted); }
 .reasons .opts button.hint { border-style: dashed; border-color: var(--muted); }
+.runline { font-size: 13px; padding: 9px 12px; border-radius: 8px; background: var(--chip); color: var(--muted); line-height: 1.4; }
+.runline b { color: var(--ink); font-weight: 600; }
+.runline[data-tone="ok"] { background: var(--go-soft); color: var(--go); }
+.runline[data-tone="warn"] { background: var(--wait-soft); color: var(--wait); }
+.runline[data-tone="bad"] { background: var(--stop-soft); color: var(--stop); }
+.runline ul { margin: 4px 0 0; padding-left: 18px; }
 .addbox { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
 .addbox summary { cursor: pointer; font-weight: 600; font-size: 15px; }
 .addbox summary span { font-weight: 400; color: var(--muted); font-size: 13px; }
@@ -164,6 +170,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 
 <main>
   <div class="wrap">
+    <div class="runline" id="runline" data-tone="muted">Checking the daily run…</div>
     <details class="addbox" id="addbox">
       <summary>Add an item you found <span id="inboxCount"></span></summary>
       <form id="addForm" novalidate>
@@ -553,6 +560,31 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
     } finally { btn.disabled = false; }
   });
 
+  // ---- Daily run status (runs/<batch-date>, written by the scheduled run) ----
+  const RUN_TIME = "6:15";        // scheduled start, Baghdad
+  const READY_BY_MIN = 7 * 60 + 30; // items should be on the page by 7:30
+  function baghdadNow() {
+    const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Baghdad", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date()).map(p => [p.type, p.value]));
+    return { date: parts.year + "-" + parts.month + "-" + parts.day, minutes: Number(parts.hour) * 60 + Number(parts.minute) };
+  }
+  const hhmm = iso => iso ? new Date(iso).toLocaleTimeString("en-GB", { timeZone: "Asia/Baghdad", hour: "2-digit", minute: "2-digit" }) : "";
+  function renderRun(runs) {
+    const line = $("runline");
+    const now = baghdadNow();
+    const last = runs[0];
+    const set = (tone, ...kids) => { line.dataset.tone = tone; line.replaceChildren(...kids.filter(k => k != null)); };
+    const problems = r => (r.problems && r.problems.length) ? el("ul", {}, r.problems.map(p => el("li", { text: p }))) : null;
+    if (last && last.batch === now.date) {
+      if (last.status === "running") return set("muted", el("b", { text: "Today's run is working" }), " (started " + hhmm(last.started_at) + " Baghdad). New items appear when it finishes.");
+      if (last.status === "done") return set("ok", el("b", { text: "Today's batch is ready:" }), " " + (last.added || 0) + " new items, added at " + hhmm(last.finished_at) + ".");
+      if (last.status === "partial") return set("warn", el("b", { text: "Today's batch is partly done:" }), " " + (last.added || 0) + " items added at " + hhmm(last.finished_at) + ". What went wrong:", problems(last));
+      return set("bad", el("b", { text: "Today's run failed." }), " Ask Claude to look at it. What went wrong:", problems(last));
+    }
+    const lastTxt = last ? " Last run: " + last.batch + " (" + (last.added || 0) + " items)." : "";
+    if (now.minutes >= READY_BY_MIN) return set("bad", el("b", { text: "No run today yet." }), " It starts at " + RUN_TIME + " and should be done by 7:30." + lastTxt + " Ask Claude to check the scheduled task.");
+    return set("muted", "Next run today at " + RUN_TIME + " Baghdad." + lastTxt);
+  }
+
   async function start() {
     render();
     claude.use("assets").then(a => { assets = a; }).catch(() => {});
@@ -574,6 +606,12 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
       setStatus(state.items.length ? (state.canWrite ? "" : "View only: you can't record decisions on this list.") : (gotItems ? "No shortlist yet. Claude adds this week's items here after each funnel run." : "Loading this week's shortlist…"), state.canWrite ? null : "warn");
       render();
     }, () => { clearTimeout(timer); setStatus("The shortlist couldn't load. Reopen the page to try again.", "warn"); });
+    let runRows = [];
+    db.collection("runs").orderBy("batch", "desc").limit(3).onSnapshot(snap => {
+      runRows = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+      renderRun(runRows);
+    }, () => { $("runline").textContent = "Couldn't load the daily run status."; });
+    setInterval(() => renderRun(runRows), 60000);
     db.collection("inbox").orderBy("at", "desc").limit(50).onSnapshot(snap => {
       renderInbox(snap.docs.map(d => Object.assign({ id: d.id }, d.data())));
     }, () => {});

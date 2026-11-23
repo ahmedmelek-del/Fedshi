@@ -1,14 +1,26 @@
 # Daily run: new items on the review page by 7:30 Baghdad
 
-Review page: https://claude.ai/artifact/6HsPNRAAxKCWRH5XADyJxN (database collections `items`, `decisions`, `inbox`).
+Review page: https://claude.ai/artifact/6HsPNRAAxKCWRH5XADyJxN (database collections `items`, `decisions`, `inbox`, `runs`, `meta`).
 Target: about 50 new items a day that Ahmed hasn't seen, ranked best first.
 Work from `product-funnel/poc` in the `ahmedmelek-del/fedshi` repo. Batch date = today's date in Asia/Baghdad.
 
+**All state lives in the review page's database, never in git.** Scheduled runs can clone the repo but usually can't push, so:
+- The taste notes are the `meta/taste` doc (field `md`, markdown).
+- The "already shown" lists are rebuilt from `items`.
+- Each run's status goes in `runs/<batch-date>`.
+
+Don't try to push, and don't make patch files.
+
+## 0. Start the run record
+`ArtifactData set` collection `runs`, doc id = batch date: `{"status": "running", "started_at": <now ISO>, "batch": <date>}`. If the doc already exists and is `done`, stop: today's batch is already published. If the doc exists but isn't `done`, carry on and pin its version when you update it. Update this doc at the end (step 7), or as soon as the run fails.
+
 ## 1. Learn from yesterday's decisions
 - `ArtifactData list` the `decisions` collection and the `items` collection (page through with the cursor).
-- Rewrite `taste.md`. Count requested and skipped items, and the reason codes per decision (see `../research/02-learning-from-decisions.md`). Note patterns by category, battery, price, the open/wow/mass scores and source.
+- `ArtifactData get` `meta/taste` and read its `md` field. These are the current rules and patterns; `taste.md` in the repo is only a starting copy.
+- Rewrite it. Count requested and skipped items, and the reason codes per decision (see `../research/02-learning-from-decisions.md`). Note patterns by category, battery, price, the open/wow/mass scores and source.
 - A pattern becomes a "Hard rule" only when the same reason code backs it on at least 5 decisions with no counter-example. Otherwise keep it as a hypothesis.
 - Note how many decisions still have no reason.
+- Save the rewritten text back to `meta/taste` (`update`, field `md`, pinned to the version you read). Also save it to `taste.md` locally so the judge step can read it.
 
 ## 2. Hand-added items (inbox)
 - `ArtifactData query` the `inbox` collection where `status == "new"`.
@@ -57,10 +69,20 @@ The ranked order comes from `score.py`. `seed.py` writes `out/seed/manifest.json
 - **Items:** `ArtifactData batch` with at most 50 writes, using the writes from `attach_images.py`. Never overwrite an existing doc: skip any `doc_id` already in `items`.
 - Read back one page of `items` to confirm the batch is there.
 
-## 7. Save and report
-- If the push is refused (the repo isn't attached to the scheduled task), say so in the summary and carry on. The review page already has the batch, and the next run rebuilds the seen lists from it.
-- Commit `taste.md`, `shortlist.json`, `data/seen_asins.txt`, `data/*.json` and `out/ranked.*` to `main` with a message like `Daily batch YYYY-MM-DD: N items`, then push.
-- End with a short summary for Ahmed:
+## 7. Finish the run record and report
+`ArtifactData update` `runs/<batch-date>` (pinned):
+```
+{"status": "done" | "partial" | "failed",
+ "finished_at": <now ISO>, "added": <items published>, "inbox_done": <n>,
+ "by_source": {"amazon_us_new_releases": n, "amazon_ae_bestsellers": n, ..., "inbox": n},
+ "top": ["name 1", "name 2", "name 3", "name 4", "name 5"],
+ "learned": "one or two sentences", "reasons_missing": <n>,
+ "problems": ["what failed, in plain words"]}
+```
+- `partial` means fewer than 20 items were added or a source failed.
+- `failed` means nothing was published. Write `failed` with the problem as soon as the run can't continue, before giving up.
+
+The review page shows this record as a status line at the top. Then end with a short summary for Ahmed:
   - how many items were added and where from;
   - the top 5;
   - what you learned from his decisions;
