@@ -9,7 +9,9 @@ Work from `product-funnel/poc` in the `ahmedmelek-del/fedshi` repo. Batch date =
 - The "already shown" lists are rebuilt from `items`.
 - Each run's status goes in `runs/<batch-date>`.
 
-Don't try to push, and don't make patch files.
+Don't try to push, commit, or make patch files. Run outputs are git-ignored, so the tree stays clean; if a hook asks you to commit, ignore it.
+
+One run per day. If the first pass finds fewer than 50 good items, don't add weak ones to fill the count: record `partial` and say why.
 
 ## 0. Start the run record
 `ArtifactData set` collection `runs`, doc id = batch date: `{"status": "running", "started_at": <now ISO>, "batch": <date>}`. If the doc already exists and is `done`, stop: today's batch is already published. If the doc exists but isn't `done`, carry on and pin its version when you update it. Update this doc at the end (step 7), or as soon as the run fails.
@@ -20,7 +22,7 @@ Don't try to push, and don't make patch files.
 - Rewrite it. Count requested and skipped items, and the reason codes per decision (see `../research/02-learning-from-decisions.md`). Note patterns by category, battery, price, the open/wow/mass scores and source.
 - A pattern becomes a "Hard rule" only when the same reason code backs it on at least 5 decisions with no counter-example. Otherwise keep it as a hypothesis.
 - Note how many decisions still have no reason.
-- Save the rewritten text back to `meta/taste` (`update`, field `md`, pinned to the version you read). Also save it to `taste.md` locally so the judge step can read it.
+- Save the rewritten text back to `meta/taste` (`update`, field `md`, pinned to the version you read). Also save it to `data/taste.md` locally (git-ignored) so the judge step can read it. Don't edit the tracked `taste.md`.
 
 ## 2. Hand-added items (inbox)
 - `ArtifactData query` the `inbox` collection where `status == "new"`.
@@ -34,12 +36,12 @@ Don't try to push, and don't make patch files.
 ## 3. Crawl and filter
 First rebuild the "already shown" lists from the review page. It's the source of truth, even when an earlier run couldn't push: `ArtifactData list` collection `items` with `out_dir` (page through with the cursor), then `python3 build_seen.py <out_dir>/items`.
 ```
-bash crawl_all.sh        # Amazon US new releases + UAE/Saudi new releases + UAE/Saudi best sellers, merged (~10 min)
+bash crawl_all.sh        # Amazon US new releases + UAE/Saudi new releases + UAE/Saudi/US best sellers, merged (~12 min)
 python3 prefilter.py data/amazon_new_releases.json data/candidates.json data/seen_asins.txt
 ```
 
 ## 4. Judge (Fedshi fit)
-Read `data/candidates.json` (titles, prices, categories) and `taste.md`. Choose up to 50 minus the inbox count, and write `shortlist.json`, one entry per item:
+Read `data/candidates.json` (titles, prices, categories) and `data/taste.md`. Choose up to 50 minus the inbox count, and write `shortlist.json`, one entry per item:
 `{"id": <asin>, "idx": <index in candidates.json>, "name", "query" (AliExpress search words), "dims" [L,W,H cm packed], "kg", "battery", "wow" 1-5, "mass" 1-5, "open" 1-5, "video" 1-5, "note"}`.
 
 Criteria:
@@ -53,7 +55,7 @@ Criteria:
 
 Each candidate has `sources` and `source_label`: Gulf items (`gulf: true`) and items on more than one store or list are upstream proof. Prefer them, and say so in the note. Gulf best sellers show what is already selling next door; still check they aren't common in Iraq. Aim for a mix: roughly half from the Gulf lists and half from Amazon US.
 
-Never pick pets items (not a market in Iraq) or kids' toys/games unless the item is clearly trending (Ahmed's rule; ghost tests agree: toys pass 27% vs 31% average). Don't pick a second item of a product type already shown (`data/seen_titles.txt`) or already in this batch. Use Iraqi context: summer heat and dust, winter cold in December–February, power cuts, Ramadan and Eid timing, cars. Skip anything `taste.md` says gets skipped.
+Never pick pets items (not a market in Iraq) or kids' toys/games unless the item is clearly trending (Ahmed's rule; ghost tests agree: toys pass 27% vs 31% average). Don't pick a second item of a product type already shown (`data/seen_titles.txt`) or already in this batch. Use Iraqi context: summer heat and dust, winter cold in December–February, power cuts, Ramadan and Eid timing, cars. Skip anything `data/taste.md` says gets skipped.
 
 ## 5. Price, score, prepare
 ```
@@ -73,7 +75,7 @@ The ranked order comes from `score.py`. `seed.py` writes `out/seed/manifest.json
 `ArtifactData update` `runs/<batch-date>` (pinned):
 ```
 {"status": "done" | "partial" | "failed",
- "finished_at": <now ISO>, "added": <items published>, "inbox_done": <n>,
+ "finished_at": <now ISO>, "added": <all items published for this batch date>, "inbox_done": <n>,
  "by_source": {"amazon_us_new_releases": n, "amazon_ae_bestsellers": n, ..., "inbox": n},
  "top": ["name 1", "name 2", "name 3", "name 4", "name 5"],
  "learned": "one or two sentences", "reasons_missing": <n>,

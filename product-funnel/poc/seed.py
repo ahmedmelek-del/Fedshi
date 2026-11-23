@@ -33,7 +33,8 @@ for i, r in enumerate(rows, 1):
     doc_id = (r.get('asin') or r['id']).lower()
     doc_id = re.sub(r'[^a-z0-9_\-.]', '-', doc_id)[:120]
     rng = ast.literal_eval(r['ali_range_usd']) if r.get('ali_range_usd') else None
-    img = r.get('image_url') or ''
+    # Gulf photos come from the EU image host, which the network blocks; the same path works on m.media-amazon.com.
+    img = (r.get('image_url') or '').replace('images-eu.ssl-images-amazon.com', 'm.media-amazon.com')
     hi = re.sub(r'\._[^/]*_\.jpg$', '._AC_SL800_.jpg', img) if 'amazon.com' in img else img
     doc = {
         'rank': i, 'batch': batch, 'week': week, 'name': r['name'], 'score': int(r['score']),

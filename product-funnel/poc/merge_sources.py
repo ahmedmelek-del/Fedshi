@@ -13,6 +13,7 @@ LABEL = {
     'amazon_sa_new_releases': 'Amazon Saudi new release',
     'amazon_ae_bestsellers': 'Amazon UAE best seller',
     'amazon_sa_bestsellers': 'Amazon Saudi best seller',
+    'amazon_us_bestsellers': 'Amazon US best seller',
 }
 
 merged = {}

@@ -1,3 +1,10 @@
 product-funnel/poc/data/images/
 product-funnel/poc/out/seed/
 product-funnel/poc/data/raw/
+# Daily-run outputs: rebuilt every run, state lives in the review page database
+product-funnel/poc/shortlist.json
+product-funnel/poc/data/*.json
+product-funnel/poc/data/*.txt
+product-funnel/poc/data/*.md
+product-funnel/poc/data/inbox_images/
+product-funnel/poc/out/
