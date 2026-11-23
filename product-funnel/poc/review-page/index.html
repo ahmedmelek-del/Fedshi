@@ -198,12 +198,6 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
     </details>
     <div class="status" id="status">Loading this week's shortlist…</div>
     <div id="list"></div>
-    <section class="export" id="export" hidden>
-      <h2>Requests for the buyer</h2>
-      <p>The approved items as text, with the highest factory price the buyer can accept for each. Copy it into Slack or WhatsApp.</p>
-      <textarea id="exportText" readonly aria-label="Approved requests as text"></textarea>
-      <button type="button" id="copyBtn">Copy requests</button>
-    </section>
   </div>
 </main>
 
@@ -285,12 +279,6 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
     $("meterFill").style.width = (c.approved / total * 100) + "%";
     $("meterGoal").style.left = (goal / total * 100) + "%";
     document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.filter === state.filter)));
-    const approved = state.items.filter(it => statusOf(it.id) === "approved");
-    $("export").hidden = approved.length === 0;
-    $("exportText").value = approved.map((it, i) =>
-      `${i + 1}. ${it.name}\n   Ref: ${it.amazon_url || it.source_url || ""}\n   Max factory price: $${Number(it.max_cost_usd).toFixed(2)} per unit (air ${fmt(it.freight_iqd)} IQD, ${it.freight_type})` +
-      (state.decisions[it.id] && state.decisions[it.id].note ? `\n   Note: ${state.decisions[it.id].note}` : "")
-    ).join("\n");
   }
 
   function el(tag, attrs, ...kids) {
@@ -527,14 +515,6 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
     try { localStorage.setItem("srr-filter", state.filter); } catch (e) {}
     render();
   }));
-  $("copyBtn").addEventListener("click", () => {
-    const ta = $("exportText");
-    const done = () => { $("copyBtn").textContent = "Copied"; setTimeout(() => { $("copyBtn").textContent = "Copy requests"; }, 1600); };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(ta.value).then(done, () => { ta.focus(); ta.select(); });
-    } else { ta.focus(); ta.select(); }
-  });
-
   // ---- Inbox: items Ahmed adds by hand; the daily run enriches and scores them ----
   let assets = null;
   function renderInbox(rows) {
