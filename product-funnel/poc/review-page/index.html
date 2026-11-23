@@ -575,7 +575,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
   });
 
   // ---- Daily run status (runs/<batch-date>, written by the scheduled run) ----
-  const RUN_TIME = "6:15";        // scheduled start, Baghdad
+  const RUN_TIME = "5:31";        // scheduled start, Baghdad
   const READY_BY_MIN = 7 * 60 + 30; // items should be on the page by 7:30
   function baghdadNow() {
     const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Baghdad", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date()).map(p => [p.type, p.value]));

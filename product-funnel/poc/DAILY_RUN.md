@@ -1,4 +1,4 @@
-# Daily run: new items on the review page by 7:30 Baghdad
+# Daily run: new items on the review page by 7:30 Baghdad (run starts 5:31)
 
 Review page: https://claude.ai/artifact/6HsPNRAAxKCWRH5XADyJxN (database collections `items`, `decisions`, `inbox`, `runs`, `meta`).
 Target: about 50 new items a day that Ahmed hasn't seen, ranked best first.
@@ -16,7 +16,7 @@ One run per day. If the first pass finds fewer than 50 good items, don't add wea
 ## 0. Start the run record
 `ArtifactData set` collection `runs`, doc id = batch date: `{"status": "running", "started_at": <now ISO>, "batch": <date>}`. If the doc already exists and is `done`, stop: today's batch is already published. If the doc exists but isn't `done`, carry on and pin its version when you update it. Update this doc at the end (step 7), or as soon as the run fails.
 
-Then get today's Supabase token with the Supabase connector (`execute_sql`, project `rndbaaladvmgpbsecxba`): `select public.sourcing_issue_token();`. Export it for every `auto_filter.py` command: `export SOURCING_TOKEN=<token>`. It expires after 8 hours. If the connector isn't available, carry on without the Supabase steps and list it in `problems`.
+Then get the Supabase funnel key: `ArtifactData get` collection `data/users/me`, doc `funnel` (Ahmed's private area; only he and runs acting as him can read it). `export SOURCING_TOKEN=<its token field>` for every `auto_filter.py` command, and never print it or write it to a file. It opens only the funnel functions. If it's missing or past its `expires` date, carry on without the Supabase steps and put "Supabase key missing or expired: ask Claude for a new one" in `problems`. Then refresh the catalog snapshot: `python3 auto_filter.py catalog`.
 
 ## 1. Learn from yesterday's decisions
 - `ArtifactData list` the `decisions` collection and the `items` collection (page through with the cursor).
@@ -24,9 +24,7 @@ Then get today's Supabase token with the Supabase connector (`execute_sql`, proj
 - Rewrite it. Count requested and skipped items, and the reason codes per decision (see `../research/02-learning-from-decisions.md`). Note patterns by category, battery, price, the open/wow/mass scores and source.
 - A pattern becomes a "Hard rule" only when the same reason code backs it on at least 5 decisions with no counter-example. Otherwise keep it as a hypothesis.
 - Note how many decisions still have no reason.
-- Send Ahmed's decisions to Supabase: `python3 auto_filter.py human <out_dir>/items <out_dir>/decisions` (after `ArtifactData list` of `items` and `decisions` with `out_dir`). Then read the shadow-mode agreement with `execute_sql`:
-  `select count(*) filter (where (auto_decision='pass' and human_decision='approved') or (auto_decision='reject' and human_decision='rejected')) agree, count(*) total from sourcing_candidates where auto_decision is not null and human_decision in ('approved','rejected');`
-  Put it in the run record as `agreement: {"agree": n, "total": n}`.
+- Send Ahmed's decisions to Supabase: `python3 auto_filter.py human <out_dir>/items <out_dir>/decisions` (after `ArtifactData list` of `items` and `decisions` with `out_dir`). Then read coverage and shadow-mode agreement: `python3 auto_filter.py stats`. Put it in the run record as `agreement: {"agree": n, "total": n}`.
 - Save the rewritten text back to `meta/taste` (`update`, field `md`, pinned to the version you read). Also save it to `data/taste.md` locally (git-ignored) so the judge step can read it. Don't edit the tracked `taste.md`.
 
 ## 2. Hand-added items (inbox)

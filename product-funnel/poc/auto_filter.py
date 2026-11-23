@@ -15,9 +15,12 @@ Commands (run from product-funnel/poc):
   python3 auto_filter.py log <batch-date>     # write every decision to sourcing_candidates in Supabase
   python3 auto_filter.py human <items-dir> <decisions-dir>   # Ahmed's page decisions -> Supabase
 
-Supabase calls go to the token-checked funnel functions. Each run first gets a short-lived token
-(8 hours) through the Supabase connector:  select public.sourcing_issue_token();
-and passes it in the SOURCING_TOKEN environment variable. No long-lived secret is stored anywhere.
+  python3 auto_filter.py stats                # coverage of the last crawl + agreement with Ahmed (JSON)
+
+Supabase calls go to the token-checked funnel functions (they open nothing else). The daily run reads the
+funnel key from Ahmed's private area of the review page database (ArtifactData get, collection
+data/users/me, doc funnel, field token) and passes it in the SOURCING_TOKEN environment variable.
+The key expires on the date in the same doc; a new one is issued with public.sourcing_issue_token().
 """
 import json
 import os
@@ -285,7 +288,14 @@ def human(items_dir, decisions_dir):
     print(f'human decisions: {len(rows)} read, {n} matched in sourcing_candidates')
 
 
+def stats():
+    r = rpc('sourcing_stats', {})
+    if r is not None:
+        print(json.dumps(r))
+
+
 if __name__ == '__main__':
     cmd, *args = sys.argv[1:] or ['help']
-    {'catalog': catalog, 'match': match, 'sheets': sheets, 'decide': decide, 'log': log, 'human': human}.get(
+    {'catalog': catalog, 'match': match, 'sheets': sheets, 'decide': decide, 'log': log, 'human': human,
+     'stats': stats}.get(
         cmd, lambda *a: print(__doc__))(*args)
