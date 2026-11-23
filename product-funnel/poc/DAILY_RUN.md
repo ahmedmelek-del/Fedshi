@@ -20,6 +20,7 @@ Work from `product-funnel/poc` in the `ahmedmelek-del/fedshi` repo. Batch date =
   - Then `update` each inbox doc to `status: "done"`, or `"skipped"` with a `reason`. Pin the version.
 
 ## 3. Crawl and filter
+First rebuild the "already shown" lists from the review page. It's the source of truth, even when an earlier run couldn't push: `ArtifactData list` collection `items` with `out_dir` (page through with the cursor), then `python3 build_seen.py <out_dir>/items`.
 ```
 node scrapers/amazon_new_releases.js data/amazon_new_releases.json
 python3 prefilter.py data/amazon_new_releases.json data/candidates.json data/seen_asins.txt
@@ -38,7 +39,7 @@ Criteria:
 - Culturally and legally OK.
 - Fits under 2 kg volume weight.
 
-Use Iraqi context: summer heat and dust, winter cold in December–February, power cuts, Ramadan and Eid timing, cars. Skip anything `taste.md` says gets skipped.
+Never pick pets items (not a market in Iraq) or kids' toys/games unless the item is clearly trending (Ahmed's rule; ghost tests agree: toys pass 27% vs 31% average). Don't pick a second item of a product type already shown (`data/seen_titles.txt`) or already in this batch. Use Iraqi context: summer heat and dust, winter cold in December–February, power cuts, Ramadan and Eid timing, cars. Skip anything `taste.md` says gets skipped.
 
 ## 5. Price, score, prepare
 ```
@@ -55,6 +56,7 @@ The ranked order comes from `score.py`. `seed.py` writes `out/seed/manifest.json
 - Read back one page of `items` to confirm the batch is there.
 
 ## 7. Save and report
+- If the push is refused (the repo isn't attached to the scheduled task), say so in the summary and carry on. The review page already has the batch, and the next run rebuilds the seen lists from it.
 - Commit `taste.md`, `shortlist.json`, `data/seen_asins.txt`, `data/*.json` and `out/ranked.*` to `main` with a message like `Daily batch YYYY-MM-DD: N items`, then push.
 - End with a short summary for Ahmed:
   - how many items were added and where from;

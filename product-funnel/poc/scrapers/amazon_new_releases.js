@@ -6,9 +6,9 @@ const fs = require('fs');
 
 // Override with CATS=a,b,c in the environment.
 const CATS = (process.env.CATS || [
-  'home-garden', 'kitchen', 'automotive', 'hi', 'pet-supplies', 'baby-products',
+  'home-garden', 'kitchen', 'automotive', 'hi', 'baby-products',
   'electronics', 'sporting-goods', 'office-products', 'lawn-garden', 'toys-and-games', 'wireless',
-  // beauty: tools only survive the filters; fashion was dropped: it is almost all clothing.
+  // beauty: tools only survive the filters. Dropped: fashion (all clothing), pet-supplies (pets aren't a market in Iraq).
   'beauty', 'arts-crafts', 'pc', 'photo',
 ].join(',')).split(',').map(s => s.trim()).filter(Boolean);
 

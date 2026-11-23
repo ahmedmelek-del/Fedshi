@@ -8,6 +8,15 @@ The daily run reads this before choosing items and rewrites it from the review p
 - Air freight only: volume weight (L×W×H ÷ 5000) ≤ 2 kg.
 - Iraq price = 3 × landed cost, within 35,000–75,000 IQD.
 - No profit floor at selection. The ghost test budget averages about $50 per item.
+- **No pets items.** Pets aren't a market in Iraq (Ahmed, 2026-11-23). Only 2 pet items were ever ghost-tested.
+- **No kids' toys or games unless clearly trending and on-taste** (Ahmed, 2026-11-23). Ghost tests: toys pass 27% of 26 tests vs 31% overall.
+- **No near-repeats:** one item per product type. Skip types already shown, like a second pair of binoculars or another hand warmer.
+
+## Evidence from 1,487 Commercial Platform ghost tests (local items, passed vs failed)
+Overall pass rate is 31%.
+- **Above average:** car items 52% (46 tests); pedestal and rechargeable fans 50%; garment steamers 44%; back support belts 44%; garden hose kits 44%; car accessories 44%; heaters 44%; portable gas stoves 40%; pizza/bread makers 39%; pressure cookers 38%; action cameras 7 of 8.
+- **Below average:** electric kettles 25%; air coolers 22%; dash cams 17%; mini washing machines 17%; kitchen organisers 14%; steam cleaners 11%; massage devices 9%; cookware sets 9%; air fryers 0 of 11; phone stands 0 of 9.
+- Car items pass well in tests, but Ahmed skipped the visor, dash cam and car vacuum as common or cheap-looking. So car items need to be new to Iraq, not just car-related.
 
 ## Learned from reasons (as of 2026-11-22: 12 of 22 decisions have reasons)
 Skip reasons (8 skips): saturated 7 · low_value 5 · weak_proof 4 · margin 3 · shipping 2 · no_wow 1.

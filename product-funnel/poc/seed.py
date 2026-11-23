@@ -27,6 +27,7 @@ os.makedirs('out/seed/items', exist_ok=True)
 os.makedirs('out/seed/images', exist_ok=True)
 manifest = {'batch': batch, 'week': week, 'items': []}
 seen_new = []
+seen_titles = []
 
 for i, r in enumerate(rows, 1):
     doc_id = (r.get('asin') or r['id']).lower()
@@ -58,9 +59,12 @@ for i, r in enumerate(rows, 1):
                               'inbox_id': r.get('inbox_id', '')})
     if r.get('asin'):
         seen_new.append(r['asin'])
+    seen_titles.append(r.get('title') or r['name'])
 
 json.dump(manifest, open('out/seed/manifest.json', 'w'), indent=1)
 with open('data/seen_asins.txt', 'a') as f:
     f.writelines(a + '\n' for a in seen_new)
+with open('data/seen_titles.txt', 'a') as f:
+    f.writelines(t.replace('\n', ' ') + '\n' for t in seen_titles)
 print(f"batch {batch} (week {week}): {len(manifest['items'])} items, "
       f"{sum(1 for x in manifest['items'] if x['photo'])} photos, {len(seen_new)} ASINs marked seen")
