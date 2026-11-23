@@ -16,12 +16,17 @@ One run per day. If the first pass finds fewer than 50 good items, don't add wea
 ## 0. Start the run record
 `ArtifactData set` collection `runs`, doc id = batch date: `{"status": "running", "started_at": <now ISO>, "batch": <date>}`. If the doc already exists and is `done`, stop: today's batch is already published. If the doc exists but isn't `done`, carry on and pin its version when you update it. Update this doc at the end (step 7), or as soon as the run fails.
 
+Then get today's Supabase token with the Supabase connector (`execute_sql`, project `rndbaaladvmgpbsecxba`): `select public.sourcing_issue_token();`. Export it for every `auto_filter.py` command: `export SOURCING_TOKEN=<token>`. It expires after 8 hours. If the connector isn't available, carry on without the Supabase steps and list it in `problems`.
+
 ## 1. Learn from yesterday's decisions
 - `ArtifactData list` the `decisions` collection and the `items` collection (page through with the cursor).
 - `ArtifactData get` `meta/taste` and read its `md` field. These are the current rules and patterns; `taste.md` in the repo is only a starting copy.
 - Rewrite it. Count requested and skipped items, and the reason codes per decision (see `../research/02-learning-from-decisions.md`). Note patterns by category, battery, price, the open/wow/mass scores and source.
 - A pattern becomes a "Hard rule" only when the same reason code backs it on at least 5 decisions with no counter-example. Otherwise keep it as a hypothesis.
 - Note how many decisions still have no reason.
+- Send Ahmed's decisions to Supabase: `python3 auto_filter.py human <out_dir>/items <out_dir>/decisions` (after `ArtifactData list` of `items` and `decisions` with `out_dir`). Then read the shadow-mode agreement with `execute_sql`:
+  `select count(*) filter (where (auto_decision='pass' and human_decision='approved') or (auto_decision='reject' and human_decision='rejected')) agree, count(*) total from sourcing_candidates where auto_decision is not null and human_decision in ('approved','rejected');`
+  Put it in the run record as `agreement: {"agree": n, "total": n}`.
 - Save the rewritten text back to `meta/taste` (`update`, field `md`, pinned to the version you read). Also save it to `data/taste.md` locally (git-ignored) so the judge step can read it. Don't edit the tracked `taste.md`.
 
 ## 2. Hand-added items (inbox)
@@ -40,9 +45,27 @@ bash crawl_all.sh        # Amazon US new releases + UAE/Saudi new releases + UAE
 python3 prefilter.py data/amazon_new_releases.json data/candidates.json data/seen_asins.txt
 ```
 
-## 4. Judge (Fedshi fit)
-Read `data/candidates.json` (titles, prices, categories) and `data/taste.md`. Choose up to 50 minus the inbox count, and write `shortlist.json`, one entry per item:
-`{"id": <asin>, "idx": <index in candidates.json>, "name", "season" (event id, only for seasonal items), "query" (AliExpress search words), "dims" [L,W,H cm packed], "kg", "battery", "wow" 1-5, "mass" 1-5, "open" 1-5, "video" 1-5, "note"}`.
+## 4. Automatic filter: every item gets a decision
+The manager's rule: once a source is adopted, every item in it is processed and gets a recorded decision. Rules (step 3) already rejected most items with a reason. Now:
+```
+python3 auto_filter.py match      # catalog check against Fedshi's own data
+python3 auto_filter.py sheets     # data/judge/sheet_NN.txt, about 150 items each
+```
+The catalog check rejects items already in Fedshi's pipeline (in ghost testing, or already requested) and product types that failed 3+ ghost tests with no pass. Sheet lines carry hints: `FEDSHI WINNER` (same product passed a ghost test, so it's a China cost-down candidate, usually worth a pass), `FAILED a Fedshi ghost test`, `a local supplier already offers this`.
+
+**Judge every line of every sheet**, using `data/taste.md` and the criteria below. You can also check `data/competitors.txt` (Arabic names of competitor items in Iraq). For each sheet write `data/judge/answer_NN.json`:
+`{"<asin>": {"type": "short product type", "wow": 1-5, "mass": 1-5, "open": 1-5, "video": 1-5, "why": "one short reason", "x": "<code>"}}`
+- `open` = how open the Iraq market is: 1 = sold everywhere, 5 = nobody sells it.
+- Add `x` only to reject outright, whatever the scores: `bulky`, `kids_toy`, `low_value` (looks too cheap for 35k+), `shown` (already on the page), `consumable`, `sized`, `cosmetic`, `device_specific`, `not_product`.
+- An item passes when wow, mass, open and video are all 3 or more and it has no `x`. Only the best item of each product type passes.
+Don't skip lines: an item left unjudged counts as "not processed", and the source isn't exhausted. If time runs short, say how many were left in `problems`.
+```
+python3 auto_filter.py decide 50 5    # data/passes.json (top 50), data/shadow_rejects.json (5 rejects for Ahmed to check)
+python3 auto_filter.py log <batch-date>   # every decision -> Supabase sourcing_candidates
+```
+Then write `shortlist.json` from the inbox items, `data/passes.json` and `data/shadow_rejects.json`, one entry per item:
+`{"id": <asin>, "idx": <index in candidates.json>, "name", "season" (event id, only for seasonal items), "query" (AliExpress search words), "dims" [L,W,H cm packed], "kg", "battery", "wow", "mass", "open", "video" (from the judge), "note", "auto": "pass" | "reject", "auto_reason": <the reason from auto_decisions>}`.
+The 5 shadow rejects go on the page so Ahmed's decisions measure both kinds of mistakes: good items the filter rejected, and weak items it passed.
 
 Criteria:
 - Good margin potential.
@@ -78,6 +101,8 @@ The ranked order comes from `score.py`. `seed.py` writes `out/seed/manifest.json
 ```
 {"status": "done" | "partial" | "failed",
  "finished_at": <now ISO>, "added": <all items published for this batch date>, "inbox_done": <n>,
+ "coverage": {"crawled": n, "rules_rejected": n, "catalog_rejected": n, "judged": n, "passed": n, "not_judged": n},
+ "agreement": {"agree": n, "total": n},
  "by_source": {"amazon_us_new_releases": n, "amazon_ae_bestsellers": n, ..., "inbox": n},
  "top": ["name 1", "name 2", "name 3", "name 4", "name 5"],
  "learned": "one or two sentences", "reasons_missing": <n>,

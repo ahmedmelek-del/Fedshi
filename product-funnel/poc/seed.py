@@ -47,6 +47,8 @@ for i, r in enumerate(rows, 1):
         'amazon_url': r['amazon_url'], 'ali_url': r['ali_url'],
         'source': r.get('source') or 'amazon_new_releases', 'source_url': r.get('source_url', ''),
         'source_label': r.get('source_label', ''), 'image_src': hi,
+        # Shadow mode: what the automatic filter decided, to compare with Ahmed's decision.
+        'auto_decision': r.get('auto', ''), 'auto_reason': r.get('auto_reason', ''),
     }
     json.dump(doc, open(f'out/seed/items/{doc_id}.json', 'w'), ensure_ascii=False)
     photo = ''

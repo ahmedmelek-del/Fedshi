@@ -126,8 +126,9 @@ def main():
             'source_url': s.get('source_url', ''), 'source_label': s.get('source_label') or a.get('source_label', ''),
             'image_url': s.get('image_url', '') or a.get('image', ''), 'inbox_id': s.get('inbox_id', ''),
             'ali_url': (x['results'][0]['url'] if x['results'] else ''),
+            'auto': s.get('auto', ''), 'auto_reason': s.get('auto_reason', ''),
         })
-    rows.sort(key=lambda r: -r['score'])
+    rows.sort(key=lambda r: (r['auto'] == 'reject', -r['score']))
     os.makedirs('out', exist_ok=True)
     with open('out/ranked.csv', 'w', newline='') as f:
         wr = csv.DictWriter(f, fieldnames=list(rows[0].keys()))

@@ -103,6 +103,12 @@ main .wrap { padding-block: 16px 40px; display: grid; gap: 12px; }
 .runline[data-tone="warn"] { background: var(--wait-soft); color: var(--wait); }
 .runline[data-tone="bad"] { background: var(--stop-soft); color: var(--stop); }
 .runline ul { margin: 4px 0 0; padding-left: 18px; }
+.funnel { font-size: 14px; line-height: 1.5; }
+.funnel table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; margin: 6px 0 10px; }
+.funnel td { padding: 3px 0; border-bottom: 1px solid var(--chip); }
+.funnel td:last-child { text-align: right; font-family: var(--font-data); }
+.funnel .muted { color: var(--muted); }
+.funnel .big { font: 600 20px var(--font-data); color: var(--ink); }
 .addbox { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
 .addbox summary { cursor: pointer; font-weight: 600; font-size: 15px; }
 .addbox summary span { font-weight: 400; color: var(--muted); font-size: 13px; }
@@ -172,6 +178,10 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 <main>
   <div class="wrap">
     <div class="runline" id="runline" data-tone="muted">Checking the daily run…</div>
+    <details class="addbox" id="funnel">
+      <summary>Automatic filter: coverage and agreement</summary>
+      <div id="funnelBody" class="funnel"><p class="muted">Open to load the numbers from the Commercial Platform.</p></div>
+    </details>
     <details class="addbox" id="addbox">
       <summary>Add an item you found <span id="inboxCount"></span></summary>
       <form id="addForm" novalidate>
@@ -316,8 +326,11 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
         el("span", { class: "chip", text: "mass " + it.mass + "/5" }),
         el("span", { class: "chip", text: "open in Iraq " + it.open + "/5" }),
         el("span", { class: "chip", text: "video " + it.video + "/5" }),
-        flags.map(f => el("span", { class: /^season:/.test(f) ? "chip season" : "chip flag", text: f }))
+        flags.map(f => el("span", { class: /^season:/.test(f) ? "chip season" : "chip flag", text: f })),
+        it.auto_decision ? el("span", { class: "chip " + (it.auto_decision === "pass" ? "season" : "flag"), title: it.auto_reason || "",
+          text: it.auto_decision === "pass" ? "Auto filter: pass" : "Auto filter: reject (check me)" }) : null
       ),
+      it.auto_decision === "reject" && it.auto_reason ? el("p", { class: "note", text: "Why the filter rejected it: " + it.auto_reason }) : null,
       el("dl", { class: "stats" },
         el("div", { class: "stat" }, el("dt", { text: "Max factory" }), el("dd", { class: "key", text: maxCost > 0 ? "$" + maxCost.toFixed(2) : "none" })),
         el("div", { class: "stat" }, el("dt", { text: "Air freight" }), el("dd", { text: fmt(it.freight_iqd) + " IQD" })),
@@ -569,6 +582,44 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
     return { date: parts.year + "-" + parts.month + "-" + parts.day, minutes: Number(parts.hour) * 60 + Number(parts.minute) };
   }
   const hhmm = iso => iso ? new Date(iso).toLocaleTimeString("en-GB", { timeZone: "Asia/Baghdad", hour: "2-digit", minute: "2-digit" }) : "";
+  // Coverage of the last crawl and agreement between the automatic filter and Ahmed, from sourcing_candidates.
+  const FUNNEL_SQL = "with d as (select max(last_seen) as last_day from public.sourcing_candidates where stage <> 'shown') select json_build_object(" +
+    "'day', (select last_day from d), " +
+    "'stages', (select json_agg(x) from (select stage, coalesce(auto_decision,'undecided') as dec, count(*) as n from public.sourcing_candidates, d where last_seen = d.last_day and stage <> 'shown' group by 1,2 order by 1,2) x), " +
+    "'reasons', (select json_agg(x) from (select reason_code, count(*) as n from public.sourcing_candidates, d where last_seen = d.last_day and auto_decision = 'reject' group by 1 order by 2 desc limit 8) x), " +
+    "'agree', (select json_build_object('agree', count(*) filter (where (auto_decision='pass' and human_decision='approved') or (auto_decision='reject' and human_decision='rejected')), 'total', count(*)) " +
+    "from public.sourcing_candidates where auto_decision is not null and human_decision in ('approved','rejected'))) as r";
+  const STAGE = { rules: "Hard rules", catalog: "Fedshi catalog check", judge: "Claude judge" };
+  async function loadFunnel() {
+    const box = $("funnelBody");
+    box.replaceChildren(el("p", { class: "muted", text: "Loading…" }));
+    try {
+      const res = await mcp.callTool("Supabase", "execute_sql", { project_id: "rndbaaladvmgpbsecxba", query: FUNNEL_SQL }, { cache: false });
+      const rows = parseRows(res.payload);
+      let r = rows[0] && rows[0].r;
+      if (typeof r === "string") r = JSON.parse(r);
+      if (!r || !r.stages) { box.replaceChildren(el("p", { text: "No filter results yet. They appear after the next daily run." })); return; }
+      const total = r.stages.reduce((a, x) => a + x.n, 0);
+      const undecided = r.stages.filter(x => x.dec === "undecided").reduce((a, x) => a + x.n, 0);
+      const passed = r.stages.filter(x => x.dec === "pass").reduce((a, x) => a + x.n, 0);
+      const ag = r.agree || { agree: 0, total: 0 };
+      box.replaceChildren(
+        el("p", {}, el("span", { class: "big", text: (total ? Math.round(100 * (total - undecided) / total) : 0) + "%" }),
+          " of the " + fmt(total) + " items crawled on " + r.day + " have a decision. " + fmt(passed) + " passed, " + fmt(undecided) + " still undecided."),
+        el("table", {}, r.stages.map(x => el("tr", {}, el("td", { text: (STAGE[x.stage] || x.stage) + ": " + x.dec }), el("td", { text: fmt(x.n) })))),
+        el("p", { text: "Top reject reasons:" }),
+        el("table", {}, (r.reasons || []).map(x => el("tr", {}, el("td", { text: String(x.reason_code || "").replace(/^rule_/, "rule: ").replace(/_/g, " ") }), el("td", { text: fmt(x.n) })))),
+        el("p", {}, el("span", { class: "big", text: ag.total ? Math.round(100 * ag.agree / ag.total) + "%" : "–" }),
+          ag.total ? " agreement with your decisions (" + ag.agree + " of " + ag.total + " items the filter also decided). Full automation needs about 85% over a week."
+                   : " agreement: no overlap yet. From the next run, cards show the filter's decision, including a few rejects for you to check.")
+      );
+    } catch (e) {
+      const code = e && e.code;
+      box.replaceChildren(el("p", { text: code === "server_not_connected" ? "Add the Supabase connector in claude.ai Settings → Connectors to see these numbers." :
+        code === "not_in_manifest" || code === "approval_required" ? "Allow this page to use Supabase, then open this section again." : "Couldn't load the numbers (" + (code || "error") + ")." }));
+    }
+  }
+
   function renderRun(runs) {
     const line = $("runline");
     const now = baghdadNow();
@@ -613,6 +664,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
       renderRun(runRows);
     }, () => { $("runline").textContent = "Couldn't load the daily run status."; });
     setInterval(() => renderRun(runRows), 60000);
+    $("funnel").addEventListener("toggle", () => { if ($("funnel").open) loadFunnel(); });
     db.collection("inbox").orderBy("at", "desc").limit(50).onSnapshot(snap => {
       renderInbox(snap.docs.map(d => Object.assign({ id: d.id }, d.data())));
     }, () => {});

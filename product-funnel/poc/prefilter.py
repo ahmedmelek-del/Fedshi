@@ -13,14 +13,14 @@ import seasons
 
 EXCLUDE = {
     'clothing/sized': r"\b(rings|ring size|necklace|bracelet|earrings?|shirt|t-shirt|dress|hoodie|sweater|jacket|pants|leggings|socks?|shoes?|sneakers?|boots?|slippers?|pajamas?|bra|underwear|costume|hat|beanie|gloves?|onesie|romper|swimsuit|size \d)\b",
-    'liquid/cosmetic': r"(\b\d+(\.\d+)? ?(ml|l|ltr|litre|liter|oz)\b)|\b(softener|floor cleaner|disinfectant|refill cartridge|eye patch|cleanser|balm|wipes|dryer sheets|detergent|toner|moisturi[sz]er|lotion|serum|cream|shampoo|conditioner|oil|perfume|cologne|spray|gel|liquid|soap|wash|cleaner solution|ink|paint|polish|makeup|lipstick|mascara|sunscreen|supplement|vitamin|gummies|capsules?|tea|coffee beans|sauce|snack|food)\b",
+    'liquid/cosmetic': r"(\b\d+(\.\d+)? ?(ml|l|ltr|litres?|liters?|oz)\b)|\b(softener|floor cleaner|disinfectant|refill cartridge|eye patch|cleanser|balm|wipes|dryer sheets|detergent|toner|moisturi[sz]er|lotion|serum|cream|shampoo|conditioner|oil|perfume|cologne|spray|gel|liquid|soap|wash|cleaner solution|ink|paint|polish|makeup|lipstick|mascara|sunscreen|supplement|vitamin|gummies|capsules?|tea|coffee beans|sauce|snack|food|face mask|sheet mask|facial mask|peel off|eye patches|spot patches|retinal|retinol|collagen|niacinamide|deodorant|anti-perspirant|lip liner|lip stain|hair colou?r|dishwasher tabs|dishwasher tablets|protein powder|whey|creatine|magnesium|electrolytes?|probiotic|tissues?|toilet paper|toilet roll|copy paper|moisture absorber|calcium chloride)\b",
     'fragile': r"\b(glass|ceramic|porcelain|crystal|mirror|marble|stoneware)\b",
     'bulky/heavy': r"\b(ladder|stepladder|step stool|vibration plate|yoga mat|mop|bucket|heater|grill|smoker|chair|table|desk|sofa|mattress|cabinet|shelf|shelving|bike|bicycle|scooter|treadmill|tent|stroller|car seat|crib|playpen|tv\b|monitor|printer|refrigerator|freezer|air fryer|oven|microwave|vacuum cleaner|generator|tire|tyre|lawn mower|kayak)\b",
     'pets (not a market in Iraq)': r"\b(dogs?|cats?|puppy|puppies|kitten|pet|pets|paw|leash|litter|aquarium|bird seed|chicken dewormer)\b",
     'commodity (common in Iraq)': r"\b(screen protector|phone case|case for iphone|for iphone \d+ pro|for galaxy s\d+|hdmi cable|usb.?c cable|charging cable|hdmi|charger block|wall charger|earbuds|earphones|headphones|memory card|micro ?sd|power strip|resistance bands|smart band|instax|film)\b",
-    'not-physical/regulated': r"\b(gift card|subscription|kindle|ebook|book|dvd|blu-ray|knife|knives|blade|gun|airsoft|tactical|vape|lighter|drone)\b",
+    'not-physical/regulated': r"\b(gift card|subscription|kindle|ebook|book|dvd|blu-ray|knife|knives|blade|gun|airsoft|tactical|vape|lighter|drone|playstation 5|ps5|xbox|nintendo switch|trading cards?|mega box|factory sealed|golf balls?|pro v1|calendar|notebook|colou?ring books?|jigsaw|puzzle evening|gift voucher|replacement band|replacement strap|compatible with (whoop|apple watch|fitbit|garmin))\b",
 }
-BRANDS = r"^(yeti|stanley|owala|cuisinart|kitchenaid|ember|apple|samsung|sony|bose|jbl|anker|lego|hasbro|mattel|barbie|nike|adidas|dyson|ninja|shark|instant pot|ring|blink|amazon|echo|fire tv|google|logitech|disney|marvel|pokemon|hot wheels|fisher-price|vtech|melissa|crayola|hydro ?flask|ninja|black\+decker|dewalt|milwaukee|ryobi|craftsman|makita|bosch|garmin|fitbit|meta|nintendo|playstation|xbox|weber|traeger|coleman|igloo|rubbermaid|oxo|lodge|le creuset|pyrex|corelle|zojirushi|keurig|nespresso|breville|hamilton beach|kong|chewy|purina|pampers|huggies|graco|chicco|ergobaby|dr\. brown|philips|braun|oral-b|gillette|energizer|duracell|xiaomi|redmi|ugreen|soundcore|cerave|la roche|levoit|sandisk|fujifilm|waterwipes|bounce|torras|baseus|huawei|honor|oppo|realme|lenovo|hp|dell|asus|acer|tp-link|kingston|lexar|nivea|vaseline|johnson|dettol|tefal|moulinex|kenwood|black \+ decker|panasonic|sharp|toshiba|lg|tecno|infinix|joyroom|anker|belkin|spigen|otterbox|esr|mi)\b"
+BRANDS = r"^(yeti|stanley|owala|cuisinart|kitchenaid|ember|apple|samsung|sony|bose|jbl|anker|lego|hasbro|mattel|barbie|nike|adidas|dyson|ninja|shark|instant pot|ring|blink|amazon|echo|fire tv|google|logitech|disney|marvel|pokemon|hot wheels|fisher-price|vtech|melissa|crayola|hydro ?flask|ninja|black\+decker|dewalt|milwaukee|ryobi|craftsman|makita|bosch|garmin|fitbit|meta|nintendo|playstation|xbox|weber|traeger|coleman|igloo|rubbermaid|oxo|lodge|le creuset|pyrex|corelle|zojirushi|keurig|nespresso|breville|hamilton beach|kong|chewy|purina|pampers|huggies|graco|chicco|ergobaby|dr\. brown|philips|braun|oral-b|gillette|energizer|duracell|xiaomi|redmi|ugreen|soundcore|cerave|la roche|levoit|sandisk|fujifilm|waterwipes|bounce|torras|baseus|huawei|honor|oppo|realme|lenovo|hp|dell|asus|acer|tp-link|kingston|lexar|nivea|vaseline|johnson|dettol|tefal|moulinex|kenwood|black \+ decker|panasonic|sharp|toshiba|lg|tecno|infinix|joyroom|belkin|spigen|otterbox|esr|mi|casio|speedo|rubik'?s|jenga|command|titleist|taylormade|whoop|govee|kleenex|fairy|persil|maybelline|l[’']?or[ée]al|the ordinary|intex|fiskars|honeywell|wilson|hyperx|maped|pentel|oxford|utopia|play-doh|medicube|biodance|celimax|abib|uriage|optimum nutrition|thorne|now foods|tramontina|vileda|alfanar|hala|skillmatics|picassotiles|bright starts)\b"
 KIDS_TOY = r"\b(toys for|magnetic tiles|building blocks|stem|toy|toys|kids|children|toddler|plush|squishy|doll|puzzle|blind box|play-?doh|nerf|pretend play|ages? \d)"
 TRENDY_REVIEWS = 1000  # kids' toys only pass when clearly trending (Ahmed: toys rarely make good orders)
 USD_MIN, USD_MAX = 8, 60
@@ -58,7 +58,7 @@ def main(src, dst, seen_path=None):
         shown = [tokens(l) for l in open('data/seen_titles.txt') if l.strip()]
     except FileNotFoundError:
         pass
-    kept, dropped = [], {}
+    kept, dropped, rejected = [], {}, []
     seen_titles = set()
     for r in rows:
         t = r['title'].lower()
@@ -89,6 +89,7 @@ def main(src, dst, seen_path=None):
             reason = 'duplicate'
         if reason:
             dropped[reason] = dropped.get(reason, 0) + 1
+            rejected.append({**r, 'usd': usd, 'reason': reason})
             continue
         seen_titles.add(key)
         kept.append({**r, 'usd': usd})
@@ -98,6 +99,8 @@ def main(src, dst, seen_path=None):
     if n_season:
         print(f'{n_season} in-season items (open: ' + ', '.join(e['name'] for e in seasons.open_events()) + ')')
     json.dump(kept, open(dst, 'w'), indent=1, ensure_ascii=False)
+    # Every rejection is kept with its reason, so each crawled item ends up with a recorded decision.
+    json.dump(rejected, open('data/rule_rejects.json', 'w'), ensure_ascii=False)
     print(f"in {len(rows)} -> kept {len(kept)}")
     for k, v in sorted(dropped.items(), key=lambda x: -x[1]):
         print(f"  dropped {v:4d}  {k}")
