@@ -8,6 +8,8 @@ import csv
 import json
 import os
 
+import seasons
+
 ASSUMPTIONS = {
     'iqd_per_usd': 1600,
     # China→Iraq air rate in IQD per kg, charged on max(actual, volume) weight
@@ -92,16 +94,25 @@ def main():
             flags.append('too heavy for the 75k price')
         elif rng and rng[0] * 0.4 > maxc:  # 1688 factory price is roughly 40% of AliExpress retail seen from the US
             flags.append('factory price likely above max')
-        if 'March' in s['note']:
-            flags.append('seasonal: later')
+        # Seasonal items: a time-limited window, so open ones get a boost and must be ordered by the date shown.
+        ev = next((e for e in seasons.EVENTS if e['id'] == (s.get('season') or a.get('season'))), None)
+        state = 'open' if ev else ''
+        if not ev:
+            ev, state = seasons.classify(f"{s['name']} {a.get('title', '')}")
+        if ev and state == 'open':
+            flags.append(seasons.label(ev))
+        elif ev and state in ('too late', 'too early'):
+            flags.append(f"season {state}: {ev['name']}")
 
         # 0–5 sub-scores
         margin_s = 0  # filled in once the buyer's quotation is known
         proof_s = clamp((min(a['reviews'], 1000) / 1000) * 2.5 + (min(top_sold, 10000) / 10000) * 2.5, 0, 5)
         subs = {'margin': margin_s, 'proof': proof_s, 'open': s['open'], 'mass': s['mass'], 'wow': s['wow'], 'video': s['video']}
         score = sum(WEIGHTS[k] * v / 5 for k, v in subs.items())
-        if 'over 2 kg volume' in flags or 'seasonal: later' in flags:
+        if 'over 2 kg volume' in flags or any(f.startswith('season too') for f in flags):
             score *= 0.6
+        elif any(f.startswith('season:') for f in flags):
+            score *= 1.15
         rows.append({
             'id': s['id'], 'name': s['name'], 'score': round(score),
             'ali_range_usd': ali_range(x), 'vol_kg': round(vol_kg, 2), 'bill_kg': round(bill_kg, 2),
@@ -137,7 +148,7 @@ def main():
         f.write('\n## Assumptions\n\n')
         for k, v in A.items():
             f.write(f'- `{k}` = {v}\n')
-        f.write(f"\nWeights: {WEIGHTS}. Items over 2 kg volume or out of season are scored ×0.6.\n")
+        f.write(f"\nWeights: {WEIGHTS}. Items over 2 kg volume or out of season are scored ×0.6; items for an open season ×1.15.\n")
     for i, r in enumerate(rows, 1):
         print(f"{i:2} {r['score']:3} {r['id']:18} freight={r['freight_iqd']:>7,.0f} maxcost=${r['max_cost_usd']} ali={r['ali_range_usd']} kg={r['bill_kg']} | {r['flags']}")
 

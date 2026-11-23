@@ -36,13 +36,13 @@ One run per day. If the first pass finds fewer than 50 good items, don't add wea
 ## 3. Crawl and filter
 First rebuild the "already shown" lists from the review page. It's the source of truth, even when an earlier run couldn't push: `ArtifactData list` collection `items` with `out_dir` (page through with the cursor), then `python3 build_seen.py <out_dir>/items`.
 ```
-bash crawl_all.sh        # Amazon US new releases + UAE/Saudi new releases + UAE/Saudi/US best sellers, merged (~12 min)
+bash crawl_all.sh        # Amazon US new releases + UAE/Saudi new releases + UAE/Saudi/US best sellers + Gulf searches for open seasons, merged (~12 min)
 python3 prefilter.py data/amazon_new_releases.json data/candidates.json data/seen_asins.txt
 ```
 
 ## 4. Judge (Fedshi fit)
 Read `data/candidates.json` (titles, prices, categories) and `data/taste.md`. Choose up to 50 minus the inbox count, and write `shortlist.json`, one entry per item:
-`{"id": <asin>, "idx": <index in candidates.json>, "name", "query" (AliExpress search words), "dims" [L,W,H cm packed], "kg", "battery", "wow" 1-5, "mass" 1-5, "open" 1-5, "video" 1-5, "note"}`.
+`{"id": <asin>, "idx": <index in candidates.json>, "name", "season" (event id, only for seasonal items), "query" (AliExpress search words), "dims" [L,W,H cm packed], "kg", "battery", "wow" 1-5, "mass" 1-5, "open" 1-5, "video" 1-5, "note"}`.
 
 Criteria:
 - Good margin potential.
@@ -54,6 +54,8 @@ Criteria:
 - Fits under 2 kg volume weight.
 
 Each candidate has `sources` and `source_label`: Gulf items (`gulf: true`) and items on more than one store or list are upstream proof. Prefer them, and say so in the note. Gulf best sellers show what is already selling next door; still check they aren't common in Iraq. Aim for a mix: roughly half from the Gulf lists and half from Amazon US.
+
+**Seasons.** Run `python3 seasons.py` to see which events are open (Christmas & New Year, Ramadan, Eid, Valentine's, Mother's Day, summer, back to school). While an event is open, about 10 of the 50 picks should be for it, mostly from the `amazon_ae_season` / `amazon_sa_season` rows (Gulf seasonal searches). Pick what sells in Iraq: decorations, LED lights, gifts, home and table items for gatherings, not Western-only items (stockings, nativity scenes, Halloween). Air-freight rules still apply: light, unbreakable (no glass ornaments), no liquids, and not bulky (no full-size trees). Add `"season": <event id>` to the shortlist entry and say in the note when it must be ordered. Close to the last order date, prefer items the buyer can source fast. score.py adds a "season: … order by …" chip and a ×1.15 boost; items past the order date are scored down.
 
 Never pick pets items (not a market in Iraq) or kids' toys/games unless the item is clearly trending (Ahmed's rule; ghost tests agree: toys pass 27% vs 31% average). Don't pick a second item of a product type already shown (`data/seen_titles.txt`) or already in this batch. Use Iraqi context: summer heat and dust, winter cold in December–February, power cuts, Ramadan and Eid timing, cars. Skip anything `data/taste.md` says gets skipped.
 

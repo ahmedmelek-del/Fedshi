@@ -1,7 +1,7 @@
 """Rule-based hard filters for raw candidates (step 1 of scoring).
 
 Drops: excluded categories (clothing/sized, liquids/cosmetics, fragile), big brands,
-seasonal-Western items, out-of-range prices, and items too heavy/bulky for air (by keyword).
+out-of-window seasonal items (see seasons.py), out-of-range prices, and items too heavy/bulky for air (by keyword).
 Usage: python3 prefilter.py data/amazon_new_releases.json data/candidates.json [data/seen_asins.txt]
 The optional seen file lists ASINs already shown on the review page; they are skipped.
 """
@@ -9,11 +9,12 @@ import json
 import re
 import sys
 
+import seasons
+
 EXCLUDE = {
     'clothing/sized': r"\b(rings|ring size|necklace|bracelet|earrings?|shirt|t-shirt|dress|hoodie|sweater|jacket|pants|leggings|socks?|shoes?|sneakers?|boots?|slippers?|pajamas?|bra|underwear|costume|hat|beanie|gloves?|onesie|romper|swimsuit|size \d)\b",
     'liquid/cosmetic': r"(\b\d+(\.\d+)? ?(ml|l|ltr|litre|liter|oz)\b)|\b(softener|floor cleaner|disinfectant|refill cartridge|eye patch|cleanser|balm|wipes|dryer sheets|detergent|toner|moisturi[sz]er|lotion|serum|cream|shampoo|conditioner|oil|perfume|cologne|spray|gel|liquid|soap|wash|cleaner solution|ink|paint|polish|makeup|lipstick|mascara|sunscreen|supplement|vitamin|gummies|capsules?|tea|coffee beans|sauce|snack|food)\b",
     'fragile': r"\b(glass|ceramic|porcelain|crystal|mirror|marble|stoneware)\b",
-    'seasonal-west': r"\b(christmas|xmas|advent|halloween|thanksgiving|stocking|santa|ornaments?|easter|hanukkah)\b",
     'bulky/heavy': r"\b(ladder|stepladder|step stool|vibration plate|yoga mat|mop|bucket|heater|grill|smoker|chair|table|desk|sofa|mattress|cabinet|shelf|shelving|bike|bicycle|scooter|treadmill|tent|stroller|car seat|crib|playpen|tv\b|monitor|printer|refrigerator|freezer|air fryer|oven|microwave|vacuum cleaner|generator|tire|tyre|lawn mower|kayak)\b",
     'pets (not a market in Iraq)': r"\b(dogs?|cats?|puppy|puppies|kitten|pet|pets|paw|leash|litter|aquarium|bird seed|chicken dewormer)\b",
     'commodity (common in Iraq)': r"\b(screen protector|phone case|case for iphone|for iphone \d+ pro|for galaxy s\d+|hdmi cable|usb.?c cable|charging cable|hdmi|charger block|wall charger|earbuds|earphones|headphones|memory card|micro ?sd|power strip|resistance bands|smart band|instax|film)\b",
@@ -65,6 +66,13 @@ def main(src, dst, seen_path=None):
             dropped['already reviewed'] = dropped.get('already reviewed', 0) + 1
             continue
         reason = next((k for k, rx in EXCLUDE.items() if re.search(rx, t)), None)
+        ev, state = seasons.classify(t)
+        if not reason and state == 'never':
+            reason = 'western holiday (no market in Iraq)'
+        elif not reason and state in ('too late', 'too early'):
+            reason = f'season {state}'
+        elif state == 'open':
+            r = {**r, 'season': ev['id']}
         if not reason and re.search(KIDS_TOY, t) and r.get('reviews', 0) < TRENDY_REVIEWS:
             reason = 'kids toy (not trending)'
         if not reason and shown:
@@ -86,6 +94,9 @@ def main(src, dst, seen_path=None):
         kept.append({**r, 'usd': usd})
     # Strongest upstream signal first: on several stores/lists, then Gulf, then most reviews.
     kept.sort(key=lambda r: (-len(r.get('sources') or [1]), -int(bool(r.get('gulf'))), -(r.get('reviews') or 0)))
+    n_season = sum(1 for r in kept if r.get('season'))
+    if n_season:
+        print(f'{n_season} in-season items (open: ' + ', '.join(e['name'] for e in seasons.open_events()) + ')')
     json.dump(kept, open(dst, 'w'), indent=1, ensure_ascii=False)
     print(f"in {len(rows)} -> kept {len(kept)}")
     for k, v in sorted(dropped.items(), key=lambda x: -x[1]):

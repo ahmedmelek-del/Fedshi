@@ -8,3 +8,4 @@ product-funnel/poc/data/*.txt
 product-funnel/poc/data/*.md
 product-funnel/poc/data/inbox_images/
 product-funnel/poc/out/
+__pycache__/

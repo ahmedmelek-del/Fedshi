@@ -72,6 +72,7 @@ main .wrap { padding-block: 16px 40px; display: grid; gap: 12px; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--chip); color: var(--muted); }
 .chip.flag { background: var(--wait-soft); color: var(--wait); }
+.chip.season { background: var(--go-soft); color: var(--go); font-weight: 600; }
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .stat { display: grid; gap: 1px; min-width: 0; }
 .stat dt { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
@@ -230,7 +231,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
       if (it.wow <= 3) s.add("no_wow");
       if (it.mass <= 3) s.add("niche");
       if (/battery|kg/.test(flags)) s.add("shipping");
-      if (/seasonal/.test(flags)) s.add("season");
+      if (/season/.test(flags)) s.add("season");
       if (Number(it.max_cost_usd) <= 5) s.add("margin");
     } else if (status === "approved") {
       if (it.video >= 5) s.add("demo");
@@ -315,7 +316,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
         el("span", { class: "chip", text: "mass " + it.mass + "/5" }),
         el("span", { class: "chip", text: "open in Iraq " + it.open + "/5" }),
         el("span", { class: "chip", text: "video " + it.video + "/5" }),
-        flags.map(f => el("span", { class: "chip flag", text: f }))
+        flags.map(f => el("span", { class: /^season:/.test(f) ? "chip season" : "chip flag", text: f }))
       ),
       el("dl", { class: "stats" },
         el("div", { class: "stat" }, el("dt", { text: "Max factory" }), el("dd", { class: "key", text: maxCost > 0 ? "$" + maxCost.toFixed(2) : "none" })),
