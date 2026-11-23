@@ -110,8 +110,9 @@ def main():
             'amazon_reviews': a['reviews'], 'ali_top_sold': top_sold,
             'wow': s['wow'], 'mass': s['mass'], 'open': s['open'], 'video': s['video'],
             'flags': ', '.join(flags), 'note': s['note'], 'amazon_url': a['url'],
-            'asin': a.get('asin', ''), 'title': a.get('title', s['name']), 'source': s.get('source', 'amazon_new_releases'),
-            'source_url': s.get('source_url', ''), 'source_label': s.get('source_label', ''),
+            'asin': a.get('asin', ''), 'title': a.get('title', s['name']),
+            'source': s.get('source') or a.get('source', 'amazon_new_releases'),
+            'source_url': s.get('source_url', ''), 'source_label': s.get('source_label') or a.get('source_label', ''),
             'image_url': s.get('image_url', '') or a.get('image', ''), 'inbox_id': s.get('inbox_id', ''),
             'ali_url': (x['results'][0]['url'] if x['results'] else ''),
         })

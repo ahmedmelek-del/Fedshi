@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Crawl every Amazon source in parallel, then merge into data/amazon_new_releases.json.
+#   US new releases                  (what's new and selling in the US)
+#   UAE + Saudi new releases         (new in the Gulf, one step before Iraq)
+#   UAE + Saudi best sellers         (already proven in the Gulf)
+# Run from product-funnel/poc. Takes about 10 minutes.
+set -u
+mkdir -p data/raw
+S=scrapers/amazon_new_releases.js
+node $S data/raw/us_nr.json 2>data/raw/us_nr.log &
+HOST=www.amazon.ae node $S data/raw/ae_nr.json 2>data/raw/ae_nr.log &
+HOST=www.amazon.sa node $S data/raw/sa_nr.json 2>data/raw/sa_nr.log &
+wait
+HOST=www.amazon.ae LIST=bestsellers node $S data/raw/ae_bs.json 2>data/raw/ae_bs.log &
+HOST=www.amazon.sa LIST=bestsellers node $S data/raw/sa_bs.json 2>data/raw/sa_bs.log &
+wait
+tail -n1 data/raw/*.log
+python3 merge_sources.py data/raw/us_nr.json data/raw/ae_nr.json data/raw/sa_nr.json data/raw/ae_bs.json data/raw/sa_bs.json \
+  > data/amazon_new_releases.json

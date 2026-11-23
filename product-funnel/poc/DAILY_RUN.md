@@ -22,7 +22,7 @@ Work from `product-funnel/poc` in the `ahmedmelek-del/fedshi` repo. Batch date =
 ## 3. Crawl and filter
 First rebuild the "already shown" lists from the review page. It's the source of truth, even when an earlier run couldn't push: `ArtifactData list` collection `items` with `out_dir` (page through with the cursor), then `python3 build_seen.py <out_dir>/items`.
 ```
-node scrapers/amazon_new_releases.js data/amazon_new_releases.json
+bash crawl_all.sh        # Amazon US new releases + UAE/Saudi new releases + UAE/Saudi best sellers, merged (~10 min)
 python3 prefilter.py data/amazon_new_releases.json data/candidates.json data/seen_asins.txt
 ```
 
@@ -38,6 +38,8 @@ Criteria:
 - Mass-market appeal.
 - Culturally and legally OK.
 - Fits under 2 kg volume weight.
+
+Each candidate has `sources` and `source_label`: Gulf items (`gulf: true`) and items on more than one store or list are upstream proof. Prefer them, and say so in the note. Gulf best sellers show what is already selling next door; still check they aren't common in Iraq. Aim for a mix: roughly half from the Gulf lists and half from Amazon US.
 
 Never pick pets items (not a market in Iraq) or kids' toys/games unless the item is clearly trending (Ahmed's rule; ghost tests agree: toys pass 27% vs 31% average). Don't pick a second item of a product type already shown (`data/seen_titles.txt`) or already in this batch. Use Iraqi context: summer heat and dust, winter cold in December–February, power cuts, Ramadan and Eid timing, cars. Skip anything `taste.md` says gets skipped.
 
