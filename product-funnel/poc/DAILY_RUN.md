@@ -117,3 +117,10 @@ The review page shows this record as a status line at the top. Then end with a s
   - any source that failed.
 
 If something blocks the run, still publish whatever is ready, and say what failed.
+
+## 8. Send Ahmed the page and the report (every run, even a partial or failed one)
+1. Write `out/report-<batch-date>.md`: title "Daily product picks <batch-date>", the status (done / partial / failed), how many items were added and from where, coverage (crawled, rejected by rules / catalog / judge, passed, not judged), agreement with Ahmed, the top 5 with one line each, what was learned, and the problems. Plain words, short; end with the page link https://claude.ai/artifact/6HsPNRAAxKCWRH5XADyJxN.
+2. Send it with `SendUserFile` (`files: ["product-funnel/poc/out/report-<batch-date>.md"]`, `display: "render"`, `status: "proactive"`, caption "Today's picks are ready" or what went wrong).
+3. Open the review page for him: `Artifact` with `action: "open"` and `url` = the review page.
+4. End the session's final message with the same short summary and the page link.
+If one of these tools isn't available, do the others and put the link in the final message.
