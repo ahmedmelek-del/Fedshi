@@ -11,7 +11,7 @@ Stored in the review page (`decisions/<item-id>`):
 |---|---|
 | `saturated` Already common in Iraq | local ad/page count (Meta Ad Library, Iraq) |
 | `no_wow` No wow, hard to demo | wow + video scores, video availability |
-| `low_value` Looks cheap for 35k+ | perceived value vs. 35–75k price band |
+| `low_value` Looks cheap / low value | low perceived value (not a price band) |
 | `margin` Margin too thin | max factory cost vs. China price |
 | `shipping` Battery, size or fragile risk | battery flag, billed kg |
 | `niche` Too niche for Iraq | category, mass-appeal score |
