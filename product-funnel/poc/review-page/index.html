@@ -207,7 +207,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
   const REJECT_REASONS = [
     ["saturated", "Already common in Iraq"],
     ["no_wow", "No wow, hard to demo"],
-    ["low_value", "Looks cheap for 35k+"],
+    ["low_value", "Looks cheap / low value"],
     ["margin", "Margin too thin"],
     ["shipping", "Battery, size or fragile risk"],
     ["niche", "Too niche for Iraq"],
@@ -236,7 +236,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
       if (it.mass <= 3) s.add("niche");
       if (/battery|kg/.test(flags)) s.add("shipping");
       if (/season/.test(flags)) s.add("season");
-      if (Number(it.max_cost_usd) <= 5) s.add("margin");
+      if (!it.iraq_price_iqd && Number(it.max_cost_usd) > 0 && Number(it.max_cost_usd) <= 5) s.add("margin");
     } else if (status === "approved") {
       if (it.video >= 5) s.add("demo");
       if (it.open >= 4) s.add("open");
@@ -320,7 +320,9 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
       ),
       it.auto_decision === "reject" && it.auto_reason ? el("p", { class: "note", text: "Why the filter rejected it: " + it.auto_reason }) : null,
       el("dl", { class: "stats" },
-        el("div", { class: "stat" }, el("dt", { text: "Max factory" }), el("dd", { class: "key", text: maxCost > 0 ? "$" + maxCost.toFixed(2) : "none" })),
+        it.iraq_price_iqd
+          ? el("div", { class: "stat" }, el("dt", { text: "Iraq price est." }), el("dd", { class: "key", text: fmt(it.iraq_price_iqd) + " IQD" }))
+          : el("div", { class: "stat" }, el("dt", { text: "Max factory" }), el("dd", { class: "key", text: maxCost > 0 ? "$" + maxCost.toFixed(2) : "?" })),
         el("div", { class: "stat" }, el("dt", { text: "Air freight" }), el("dd", { text: fmt(it.freight_iqd) + " IQD" })),
         el("div", { class: "stat" }, el("dt", { text: "Billed kg" }), el("dd", { text: Number(it.bill_kg).toFixed(2) })),
         el("div", { class: "stat" }, el("dt", { text: "AliExpress" }), el("dd", { text: it.ali_range_usd || "?" }))

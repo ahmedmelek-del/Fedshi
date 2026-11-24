@@ -23,7 +23,6 @@ EXCLUDE = {
 BRANDS = r"^(yeti|stanley|owala|cuisinart|kitchenaid|ember|apple|samsung|sony|bose|jbl|anker|lego|hasbro|mattel|barbie|nike|adidas|dyson|ninja|shark|instant pot|ring|blink|amazon|echo|fire tv|google|logitech|disney|marvel|pokemon|hot wheels|fisher-price|vtech|melissa|crayola|hydro ?flask|ninja|black\+decker|dewalt|milwaukee|ryobi|craftsman|makita|bosch|garmin|fitbit|meta|nintendo|playstation|xbox|weber|traeger|coleman|igloo|rubbermaid|oxo|lodge|le creuset|pyrex|corelle|zojirushi|keurig|nespresso|breville|hamilton beach|kong|chewy|purina|pampers|huggies|graco|chicco|ergobaby|dr\. brown|philips|braun|oral-b|gillette|energizer|duracell|xiaomi|redmi|ugreen|soundcore|cerave|la roche|levoit|sandisk|fujifilm|waterwipes|bounce|torras|baseus|huawei|honor|oppo|realme|lenovo|hp|dell|asus|acer|tp-link|kingston|lexar|nivea|vaseline|johnson|dettol|tefal|moulinex|kenwood|black \+ decker|panasonic|sharp|toshiba|lg|tecno|infinix|joyroom|belkin|spigen|otterbox|esr|mi|casio|speedo|rubik'?s|jenga|command|titleist|taylormade|whoop|govee|kleenex|fairy|persil|maybelline|l[’']?or[ée]al|the ordinary|intex|fiskars|honeywell|wilson|hyperx|maped|pentel|oxford|utopia|play-doh|medicube|biodance|celimax|abib|uriage|optimum nutrition|thorne|now foods|tramontina|vileda|alfanar|hala|skillmatics|picassotiles|bright starts)\b"
 KIDS_TOY = r"\b(toys for|magnetic tiles|building blocks|stem|toy|toys|kids|children|toddler|plush|squishy|doll|puzzle|blind box|play-?doh|nerf|pretend play|ages? \d)"
 TRENDY_REVIEWS = 1000  # kids' toys only pass when clearly trending (Ahmed: toys rarely make good orders)
-USD_MIN, USD_MAX = 8, 60
 
 STOP = set("for with and the of in to a an on by from new 2026 2027 upgraded pack pcs set 1 2 3 4 5 6 portable mini rechargeable".split())
 
@@ -82,8 +81,6 @@ def main(src, dst, seen_path=None):
         if not reason and re.search(BRANDS, t):
             reason = 'big brand'
         usd = price(r.get('price'))
-        if not reason and (usd is None or not USD_MIN <= usd <= USD_MAX):
-            reason = 'price out of band'
         key = t[:40]
         if not reason and key in seen_titles:
             reason = 'duplicate'

@@ -43,7 +43,7 @@ JUDGE_REASON = [('open', 'saturated', 'already common in Iraq'),
                 ('mass', 'niche', 'too niche for mass market'),
                 ('video', 'weak_proof', 'hard to show in a video ad')]
 VETO = {'bulky': 'too big or heavy for air freight', 'kids_toy': 'kids toy, not clearly trending',
-        'low_value': 'looks too cheap for a 35k+ price', 'shown': 'already shown on the page',
+        'low_value': 'low perceived value', 'shown': 'already shown on the page',
         'consumable': 'consumable or refill', 'sized': 'sized item', 'not_product': 'not a physical product',
         'cosmetic': 'cosmetic or regulated', 'device_specific': 'fits only one device or model'}
 WEIGHTS = {'wow': 25, 'mass': 20, 'open': 20, 'video': 15}

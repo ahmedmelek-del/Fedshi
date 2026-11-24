@@ -6,7 +6,7 @@ The daily run reads this before choosing items and rewrites it from the review p
 - Iraq only, cash on delivery. Dropship-suitable items only.
 - Exclude clothing and sized items, liquids and cosmetics, fragile items.
 - Air freight only: volume weight (L×W×H ÷ 5000) ≤ 2 kg.
-- Iraq price = 3 × landed cost, within 35,000–75,000 IQD.
+- Iraq price = 3 × landed cost. No price band: never reject an item for its price alone.
 - No profit floor at selection. The ghost test budget averages about $50 per item.
 - **No pets items.** Pets aren't a market in Iraq (Ahmed, 2026-11-23). Only 2 pet items were ever ghost-tested.
 - **No kids' toys or games unless clearly trending and on-taste** (Ahmed, 2026-11-23). Ghost tests: toys pass 27% of 26 tests vs 31% overall.
@@ -31,7 +31,7 @@ My "open in Iraq" scores were too generous: I gave 4/5 to door seal, titanium bo
 
 Only include items scoring 3 or more.
 
-**Rule 2: skip things that look cheap for 35k+ IQD** (5 skips).
+**Rule 2: skip things with low perceived value (they look cheap)** (5 skips).
 Simple plastic or flat accessories with no visible tech or mechanism look like 5–10k items to an Iraqi buyer. Examples: sun visor, door seal, cutting board, galaxy projector.
 Requests had a clear "worth the price" look (`value` on the laser level and dent puller).
 

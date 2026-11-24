@@ -54,7 +54,7 @@ The catalog check rejects items already in Fedshi's pipeline (in ghost testing, 
 **Judge every line of every sheet**, using `data/taste.md` and the criteria below. You can also check `data/competitors.txt` (Arabic names of competitor items in Iraq). For each sheet write `data/judge/answer_NN.json`:
 `{"<asin>": {"type": "short product type", "wow": 1-5, "mass": 1-5, "open": 1-5, "video": 1-5, "why": "one short reason", "x": "<code>"}}`
 - `open` = how open the Iraq market is: 1 = sold everywhere, 5 = nobody sells it.
-- Add `x` only to reject outright, whatever the scores: `bulky`, `kids_toy`, `low_value` (looks too cheap for 35k+), `shown` (already on the page), `consumable`, `sized`, `cosmetic`, `device_specific`, `not_product`.
+- Add `x` only to reject outright, whatever the scores: `bulky`, `kids_toy`, `low_value` (low perceived value; there is no price band), `shown` (already on the page), `consumable`, `sized`, `cosmetic`, `device_specific`, `not_product`.
 - An item passes when wow, mass, open and video are all 3 or more and it has no `x`. Only the best item of each product type passes.
 Don't skip lines: an item left unjudged counts as "not processed", and the source isn't exhausted. If time runs short, say how many were left in `problems`.
 ```

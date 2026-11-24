@@ -15,9 +15,7 @@ ASSUMPTIONS = {
     # China→Iraq air rate in IQD per kg, charged on max(actual, volume) weight
     'air_iqd_per_kg': {'normal': 17500, 'battery': 23000, 'medical': 26000},
     'fees_iqd': 6000,               # local delivery + COD handling per order
-    'price_multiple': 3,            # Iraq price = 3 × landed cost (factory + air), kept within the band
-    'price_min_iqd': 35000,
-    'price_max_iqd': 75000,
+    'price_multiple': 3,            # Iraq price = 3 × landed cost (factory + air); no price band (Ahmed, 24 Nov)
     'volume_divisor': 5000,
     'max_volume_kg': 2.0,
     'ghost_min_profit_iqd': 18300,  # below this an item can't reach ROAS 3 with 15 orders in 2 days
@@ -48,20 +46,21 @@ def price_for(factory_usd, freight):
     A = ASSUMPTIONS
     landed = factory_usd * A['iqd_per_usd'] + freight
     raw = A['price_multiple'] * landed
-    price = clamp(round(raw / 1000) * 1000, A['price_min_iqd'], A['price_max_iqd'])
+    price = round(raw / 1000) * 1000
     profit = price - landed - A['fees_iqd']
     status = 'ok'
-    if raw > A['price_max_iqd']:
-        status = 'above 75k: price capped, margin below 3x'
     if profit < A['ghost_min_profit_iqd']:
         status = 'low margin for ghost test'
     return price, round(profit, -2), status
 
 
-def max_factory_usd(freight):
-    """Highest quotation that still gives a 3x price inside the 75k cap."""
+def est_iraq_price(rng, freight):
+    """Rough Iraq price: 3 x (estimated factory cost + air freight). The factory cost is guessed as 40% of the
+    cheaper AliExpress quartile until the buyer's quotation (or Alibaba) gives a real one."""
+    if not rng:
+        return 0
     A = ASSUMPTIONS
-    return (A['price_max_iqd'] / A['price_multiple'] - freight) / A['iqd_per_usd']
+    return round(A['price_multiple'] * (rng[0] * 0.4 * A['iqd_per_usd'] + freight), -3)
 
 
 def main():
@@ -89,11 +88,6 @@ def main():
         if s['battery']:
             flags.append('battery')
         rng = ali_range(x)
-        maxc = max_factory_usd(freight)
-        if maxc <= 0:
-            flags.append('too heavy for the 75k price')
-        elif rng and rng[0] * 0.4 > maxc:  # 1688 factory price is roughly 40% of AliExpress retail seen from the US
-            flags.append('factory price likely above max')
         # Seasonal items: a time-limited window, so open ones get a boost and must be ordered by the date shown.
         ev = next((e for e in seasons.EVENTS if e['id'] == (s.get('season') or a.get('season'))), None)
         state = 'open' if ev else ''
@@ -117,7 +111,7 @@ def main():
             'id': s['id'], 'name': s['name'], 'score': round(score),
             'ali_range_usd': ali_range(x), 'vol_kg': round(vol_kg, 2), 'bill_kg': round(bill_kg, 2),
             'freight_type': kind, 'freight_iqd': round(freight, -2),
-            'max_cost_usd': round(max_factory_usd(freight), 2),
+            'max_cost_usd': 0, 'iraq_price_iqd': est_iraq_price(rng, freight),
             'amazon_reviews': a['reviews'], 'ali_top_sold': top_sold,
             'wow': s['wow'], 'mass': s['mass'], 'open': s['open'], 'video': s['video'],
             'flags': ', '.join(flags), 'note': s['note'], 'amazon_url': a['url'],
@@ -142,7 +136,7 @@ def main():
             rng = f"${r['ali_range_usd'][0]:.0f}–{r['ali_range_usd'][1]:.0f}" if r['ali_range_usd'] else '?'
             mc = f"${r['max_cost_usd']:.2f}" if r['max_cost_usd'] > 0 else 'none'
             f.write(f"| {i} | [{r['name']}]({r['amazon_url']}) | {r['score']} | {r['freight_iqd']:,.0f} ({r['freight_type']}) | {mc} | {rng} | {r['bill_kg']} | {r['flags']} |\n")
-        f.write('\n\\* **Price rule:** Iraq price = 3 × landed cost (factory + air freight), kept within 35,000–75,000 IQD. **Max factory cost** is the highest quotation that still fits a 3× price under 75,000 IQD: 25,000 IQD − air freight. Give it to the buyer with each request. When quotations come in, run `python3 quote.py <id> <usd>` for the price and profit. The AliExpress range is retail context only, not a cost estimate.\n\n')
+        f.write('\n\\* **Price rule:** Iraq price = 3 × landed cost (factory + air freight), with no price band. **Iraq price est.** uses a rough factory cost (40% of the cheaper AliExpress prices) until the buyer quotes. When quotations come in, run `python3 quote.py <id> <usd>` for the price and profit.\n\n')
         f.write('## Notes per item\n\n')
         for i, r in enumerate(rows, 1):
             f.write(f"{i}. **{r['name']}**: {r['note']}. Amazon reviews {r['amazon_reviews']:,}, AliExpress top listing {r['ali_top_sold']:,} sold. [AliExpress]({r['ali_url']})\n")
