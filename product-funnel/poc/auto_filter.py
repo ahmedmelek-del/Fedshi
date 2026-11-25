@@ -37,6 +37,7 @@ PUBLISHABLE_KEY = 'sb_publishable_LIxScKDbumZJE62PSvVC9A_LMl6Txut'  # public key
 SATURATED_MATCH = 0.75   # share of a Fedshi item's name words found in the title (same product)
 TYPE_MATCH = 0.5         # enough to borrow the product type and its ghost-test record
 FAILED_TYPE_TESTS = 3    # a type with at least this many tests and no pass is rejected
+SATURATED_SELLERS = 8    # same product already sold by this many Iraqi sellers/pages -> rejected as saturated
 PASS_MIN = 3             # every judge score must reach this to pass
 JUDGE_REASON = [('open', 'saturated', 'already common in Iraq'),
                 ('wow', 'no_wow', 'no wow or problem solved'),
@@ -112,6 +113,8 @@ def match():
             info = {'product_type': m['type'], 'matched_item_fid': m['fid'], 'matched_item_name': m['name'],
                     'match_score': round(s, 2), 'type_items': m['type_items'], 'type_tests': m['type_tests'],
                     'type_passed': m['type_passed']}
+            if m.get('market') and s >= SATURATED_MATCH:  # Iraq market check of the SAME product (pricing service);
+                info['market'] = {**m['market'], 'same': True}  # word-overlap "similar" matches are too noisy to use
         row = {**r, **info}
         if m and s >= SATURATED_MATCH:
             row['fedshi_status'] = m.get('status') or ('requested' if m.get('source') == 'requested' else 'suggested')
@@ -120,6 +123,11 @@ def match():
             # Items that already PASSED stay in: re-sourcing a winner from China is a cost-down opportunity.
             rejects.append({**row, 'reason_code': 'in_pipeline',
                             'reason': f"Already in Fedshi's pipeline: {m['name']} ({row['fedshi_status']})"})
+        elif m and s >= SATURATED_MATCH and (m.get('market') or {}).get('sellers', 0) >= SATURATED_SELLERS:
+            mk = m['market']
+            rejects.append({**row, 'reason_code': 'saturated',
+                            'reason': f"Already common in Iraq: {mk['sellers']} Iraqi sellers of {m['name']}"
+                                      f" (median {int(mk['median_iqd'] or 0):,} IQD, checked {mk['checked']})"})
         elif info and m['type_tests'] >= FAILED_TYPE_TESTS and m['type_passed'] == 0:
             rejects.append({**row, 'reason_code': 'failed_before',
                             'reason': f"{m['type']}: 0 of {m['type_tests']} ghost tests passed"})
@@ -144,6 +152,11 @@ def sheets(size=150):
                 hint = {'passed': " | FEDSHI WINNER: same product passed a ghost test, China cost-down candidate",
                         'failed': " | same product FAILED a Fedshi ghost test before",
                         'suggested': " | a local supplier already offers this in Iraq"}.get(r.get('fedshi_status'), '')
+                mk = r.get('market')
+                if mk:
+                    hint += (f" | IRAQ MARKET ({'same product' if mk['same'] else 'similar product'}): {mk['sellers']} sellers"
+                             f"{', median ' + format(int(mk['median_iqd']), ',') + ' IQD' if mk.get('median_iqd') else ''}"
+                             f"{', ' + str(mk['ads']) + ' Meta ads' if mk.get('ads') else ''}")
                 if r.get('product_type'):
                     hint += (f" | like Fedshi '{r['matched_item_name']}' ({r['match_score']:.0%}); type "
                             f"{r['product_type']}: {r['type_items']} items, {r['type_passed']}/{r['type_tests']} tests passed")

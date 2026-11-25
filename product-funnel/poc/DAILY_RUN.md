@@ -49,11 +49,11 @@ The manager's rule: once a source is adopted, every item in it is processed and 
 python3 auto_filter.py match      # catalog check against Fedshi's own data
 python3 auto_filter.py sheets     # data/judge/sheet_NN.txt, about 150 items each
 ```
-The catalog check rejects items already in Fedshi's pipeline (in ghost testing, or already requested) and product types that failed 3+ ghost tests with no pass. Sheet lines carry hints: `FEDSHI WINNER` (same product passed a ghost test, so it's a China cost-down candidate, usually worth a pass), `FAILED a Fedshi ghost test`, `a local supplier already offers this`.
+The catalog check rejects items already in Fedshi's pipeline (in ghost testing, or already requested), the same product already sold by 8+ Iraqi sellers (from the platform's Iraq market check: TikTok, Facebook, Instagram, shops, Meta ads), and product types that failed 3+ ghost tests with no pass. Sheet lines carry hints: `FEDSHI WINNER` (same product passed a ghost test, so it's a China cost-down candidate, usually worth a pass), `FAILED a Fedshi ghost test`, `a local supplier already offers this`.
 
 **Judge every line of every sheet**, using `data/taste.md` and the criteria below. You can also check `data/competitors.txt` (Arabic names of competitor items in Iraq). For each sheet write `data/judge/answer_NN.json`:
 `{"<asin>": {"type": "short product type", "wow": 1-5, "mass": 1-5, "open": 1-5, "video": 1-5, "why": "one short reason", "x": "<code>"}}`
-- `open` = how open the Iraq market is: 1 = sold everywhere, 5 = nobody sells it.
+- `open` = how open the Iraq market is: 1 = sold everywhere, 5 = nobody sells it. When the line has an `IRAQ MARKET` hint, score from it, not from memory: same product with 0 sellers = 5, 1–2 = 4, 3–4 = 3, 5–7 = 2 (8+ is already rejected by the catalog check). For a *similar* product, use it as a guide and adjust by how close the match is. Meta ads running in Iraq mean someone is already pushing it: score one lower.
 - Add `x` only to reject outright, whatever the scores: `bulky`, `kids_toy`, `low_value` (low perceived value; there is no price band), `shown` (already on the page), `consumable`, `sized`, `cosmetic`, `device_specific`, `not_product`.
 - An item passes when wow, mass, open and video are all 3 or more and it has no `x`. Only the best item of each product type passes.
 Don't skip lines: an item left unjudged counts as "not processed", and the source isn't exhausted. If time runs short, say how many were left in `problems`.
