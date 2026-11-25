@@ -9,6 +9,7 @@ import json
 import re
 import sys
 
+import lanes
 import seasons
 
 EXCLUDE = {
@@ -20,7 +21,7 @@ EXCLUDE = {
     'commodity (common in Iraq)': r"\b(screen protector|phone case|case for iphone|for iphone \d+ pro|for galaxy s\d+|hdmi cable|usb.?c cable|charging cable|hdmi|charger block|wall charger|earbuds|earphones|headphones|memory card|micro ?sd|power strip|resistance bands|smart band|instax|film)\b",
     'not-physical/regulated': r"\b(gift card|subscription|kindle|ebook|book|dvd|blu-ray|knife|knives|blade|gun|airsoft|tactical|vape|lighter|drone|playstation 5|ps5|xbox|nintendo switch|trading cards?|mega box|factory sealed|golf balls?|pro v1|calendar|notebook|colou?ring books?|jigsaw|puzzle evening|gift voucher|replacement band|replacement strap|compatible with (whoop|apple watch|fitbit|garmin))\b",
 }
-BRANDS = r"^(yeti|stanley|owala|cuisinart|kitchenaid|ember|apple|samsung|sony|bose|jbl|anker|lego|hasbro|mattel|barbie|nike|adidas|dyson|ninja|shark|instant pot|ring|blink|amazon|echo|fire tv|google|logitech|disney|marvel|pokemon|hot wheels|fisher-price|vtech|melissa|crayola|hydro ?flask|ninja|black\+decker|dewalt|milwaukee|ryobi|craftsman|makita|bosch|garmin|fitbit|meta|nintendo|playstation|xbox|weber|traeger|coleman|igloo|rubbermaid|oxo|lodge|le creuset|pyrex|corelle|zojirushi|keurig|nespresso|breville|hamilton beach|kong|chewy|purina|pampers|huggies|graco|chicco|ergobaby|dr\. brown|philips|braun|oral-b|gillette|energizer|duracell|xiaomi|redmi|ugreen|soundcore|cerave|la roche|levoit|sandisk|fujifilm|waterwipes|bounce|torras|baseus|huawei|honor|oppo|realme|lenovo|hp|dell|asus|acer|tp-link|kingston|lexar|nivea|vaseline|johnson|dettol|tefal|moulinex|kenwood|black \+ decker|panasonic|sharp|toshiba|lg|tecno|infinix|joyroom|belkin|spigen|otterbox|esr|mi|casio|speedo|rubik'?s|jenga|command|titleist|taylormade|whoop|govee|kleenex|fairy|persil|maybelline|l[’']?or[ée]al|the ordinary|intex|fiskars|honeywell|wilson|hyperx|maped|pentel|oxford|utopia|play-doh|medicube|biodance|celimax|abib|uriage|optimum nutrition|thorne|now foods|tramontina|vileda|alfanar|hala|skillmatics|picassotiles|bright starts)\b"
+BRANDS = r"^(yeti|stanley|owala|cuisinart|kitchenaid|ember|apple|samsung|sony|bose|jbl|anker|lego|hasbro|mattel|barbie|nike|adidas|dyson|ninja|shark|instant pot|ring|blink|amazon|echo|fire tv|google|logitech|disney|marvel|pokemon|hot wheels|fisher-price|vtech|melissa|crayola|hydro ?flask|ninja|black\+decker|dewalt|milwaukee|ryobi|craftsman|makita|bosch|garmin|fitbit|meta|nintendo|playstation|xbox|weber|traeger|coleman|igloo|rubbermaid|oxo|lodge|le creuset|pyrex|corelle|zojirushi|keurig|nespresso|breville|hamilton beach|kong|chewy|purina|pampers|huggies|graco|chicco|ergobaby|dr\. brown|philips|braun|oral-b|gillette|energizer|duracell|xiaomi|redmi|ugreen|soundcore|cerave|la roche|levoit|sandisk|fujifilm|waterwipes|bounce|torras|baseus|huawei|honor|oppo|realme|lenovo|hp|dell|asus|acer|tp-link|kingston|lexar|nivea|vaseline|johnson|dettol|tefal|moulinex|kenwood|black \+ decker|panasonic|sharp|toshiba|lg|tecno|infinix|joyroom|belkin|spigen|otterbox|esr|mi|casio|speedo|rubik'?s|jenga|command|titleist|taylormade|whoop|govee|kleenex|fairy|persil|maybelline|l[’']?or[ée]al|the ordinary|intex|fiskars|honeywell|wilson|hyperx|maped|pentel|oxford|utopia|play-doh|medicube|biodance|celimax|abib|uriage|optimum nutrition|thorne|now foods|tramontina|vileda|alfanar|hala|skillmatics|picassotiles|bright starts|wahl|remington|revlon|beurer|amope|dr\.? scholl'?s|wet n wild|babyliss|conair|panasonic|braun|tymo|dreame|laifen|sharkninja|foreo|nuface)\b"
 KIDS_TOY = r"\b(toys for|magnetic tiles|building blocks|stem|toy|toys|kids|children|toddler|plush|squishy|doll|puzzle|blind box|play-?doh|nerf|pretend play|ages? \d)"
 TRENDY_REVIEWS = 1000  # kids' toys only pass when clearly trending (Ahmed: toys rarely make good orders)
 
@@ -65,6 +66,12 @@ def main(src, dst, seen_path=None):
             dropped['already reviewed'] = dropped.get('already reviewed', 0) + 1
             continue
         reason = next((k for k, rx in EXCLUDE.items() if re.search(rx, t)), None)
+        lane = lanes.by_id(r.get('lane')) if r.get('lane') else None
+        if (reason and lane and reason in lane.get('relax', []) and re.search(lane['device_words'], t)
+                and not re.search(r"\b\d+(\.\d+)? ?(ml|l|ltr|litres?|liters?|oz|fl)\b", t)):
+            reason = None  # looks like a device: the judge decides (it rejects real cosmetics with `cosmetic`)
+        if not reason and lane and len(r.get('sources') or []) <= 1 and (r.get('reviews') or 0) < lane.get('min_reviews', 0):
+            reason = 'lane item with little demand'
         ev, state = seasons.classify(t)
         if not reason and state == 'never':
             reason = 'western holiday (no market in Iraq)'

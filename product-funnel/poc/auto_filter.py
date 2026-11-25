@@ -29,6 +29,7 @@ import re
 import subprocess
 import sys
 
+import lanes
 from prefilter import tokens
 
 SUPABASE = 'https://rndbaaladvmgpbsecxba.supabase.co/rest/v1/rpc/'
@@ -160,6 +161,8 @@ def sheets(size=150):
                 if r.get('product_type'):
                     hint += (f" | like Fedshi '{r['matched_item_name']}' ({r['match_score']:.0%}); type "
                             f"{r['product_type']}: {r['type_items']} items, {r['type_passed']}/{r['type_tests']} tests passed")
+                if r.get('lane'):
+                    hint += f" | NEW-CATEGORY TRIAL: {lanes.by_id(r['lane'])['name']}"
                 f.write(f"{r['asin']} | {r['title'][:110]} | ${r.get('usd') or '?'} | {r.get('reviews') or 0} reviews"
                         f"{' | season ' + r['season'] if r.get('season') else ''}{hint}\n")
     print(f'{len(q)} items in {(len(q) + size - 1) // size} sheets -> data/judge/')
@@ -197,19 +200,33 @@ def decide(n=50, sample=5):
                     'auto_decision': 'reject' if low else 'pass', 'reason_code': code or 'pass',
                     'reason': (f"{text}{f' ({k} {scores[k]}/5)' if k else ''}. " if low else '') + (j.get('why') or '')})
     # One item per product type: the best one passes, the rest are near-duplicates.
+    # Exploration lanes keep up to max_per_type per type, so a new type gets a fair test.
     best = {}
     for r in sorted([r for r in out if r['auto_decision'] == 'pass'], key=lambda r: -r['score']):
         t = (r.get('product_type') or '').lower()
-        if t in best:
+        lane = lanes.by_id(r.get('lane')) if r.get('lane') else None
+        limit = lane['max_per_type'] if lane else 1
+        if len(best.get(t, [])) >= limit:
             r.update(auto_decision='reject', reason_code='duplicate',
-                     reason=f"Same product type as a better pick ({best[t]}). " + r['reason'])
+                     reason=f"Same product type as a better pick ({best[t][0]}). " + r['reason'])
         else:
-            best[t] = r['title'][:40]
-    passes = sorted([r for r in out if r['auto_decision'] == 'pass'], key=lambda r: -r['score'])
+            best.setdefault(t, []).append(r['title'][:40])
+    ranked = sorted([r for r in out if r['auto_decision'] == 'pass'], key=lambda r: -r['score'])
+    # Each running lane reserves its quota of the batch; the rest is filled by rank.
+    passes, reserved = [], set()
+    for lane in lanes.running():
+        mine = [r for r in ranked if r.get('lane') == lane['id']][:lane['quota']]
+        passes += mine
+        reserved |= {r['asin'] for r in mine}
+    passes += [r for r in ranked if r['asin'] not in reserved][:max(0, int(n) - len(passes))]
+    passes.sort(key=lambda r: -r['score'])
     rejects = [r for r in out if r['auto_decision'] == 'reject']
     random.seed(len(out))
     json.dump(out, open('data/auto_decisions.json', 'w'), ensure_ascii=False)
     json.dump(passes[:int(n)], open('data/passes.json', 'w'), indent=1, ensure_ascii=False)
+    for lane in lanes.running():
+        print(f"lane {lane['name']}: {sum(1 for r in out if r.get('lane') == lane['id'])} judged, "
+              f"{sum(1 for r in passes if r.get('lane') == lane['id'])} in the batch")
     json.dump(random.sample(rejects, min(int(sample), len(rejects))), open('data/shadow_rejects.json', 'w'),
               indent=1, ensure_ascii=False)
     print(f'judge: {len(passes)} pass, {len(rejects)} reject, {missing} not judged (they stay undecided). '

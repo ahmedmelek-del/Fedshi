@@ -7,6 +7,7 @@ const fs = require('fs');
 
 const HOST = process.env.HOST || 'www.amazon.com';
 const SEASON = process.env.SEASON || '';
+const LANE = process.env.LANE || '';  // exploration lane id (see lanes.py)
 const PAGES = Number(process.env.PAGES || 1);
 const CC = HOST.split('.').pop() === 'com' ? 'us' : HOST.split('.').pop();
 const TO_USD = { AED: 1 / 3.67, SAR: 1 / 3.75, '$': 1 };
@@ -54,8 +55,8 @@ const RESULT = '[data-component-type="s-search-result"]';
         rows.push({
           asin: r.asin, title: r.title, url: `https://${HOST}/dp/${r.asin}`, image_url: r.image,
           price: usd ? `$${usd}` : '', price_local: r.amount != null ? `${r.currency} ${r.amount}` : '',
-          rating: r.rating, reviews, bought: r.bought, query: q, season: SEASON,
-          category: `search: ${q}`, source: `amazon_${CC}_season`,
+          rating: r.rating, reviews, bought: r.bought, query: q, season: SEASON, lane: LANE,
+          category: `search: ${q}`, source: LANE ? `amazon_${CC}_lane` : `amazon_${CC}_season`,
         });
       }
       console.error(`${q} p${p}: ${found.length}`);

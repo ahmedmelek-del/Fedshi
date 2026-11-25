@@ -16,6 +16,8 @@ LABEL = {
     'amazon_us_bestsellers': 'Amazon US best seller',
     'amazon_ae_season': 'Amazon UAE seasonal search',
     'amazon_sa_season': 'Amazon Saudi seasonal search',
+    'amazon_ae_lane': 'Amazon UAE (new-category trial)',
+    'amazon_sa_lane': 'Amazon Saudi (new-category trial)',
 }
 
 merged = {}
@@ -36,6 +38,8 @@ for path in sys.argv[1:]:
             m['reviews'] = max(m.get('reviews', 0), r.get('reviews', 0))
             if r.get('season') and not m.get('season'):
                 m['season'] = r['season']
+            if r.get('lane') and not m.get('lane'):
+                m['lane'] = r['lane']
             if not m.get('price') and r.get('price'):
                 m['price'], m['price_local'] = r['price'], r.get('price_local', '')
         else:
