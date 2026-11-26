@@ -55,10 +55,15 @@ The catalog check rejects items already in Fedshi's pipeline (in ghost testing, 
 `{"<asin>": {"type": "short product type", "wow": 1-5, "mass": 1-5, "open": 1-5, "video": 1-5, "why": "one short reason", "x": "<code>"}}`
 - `open` = how open the Iraq market is: 1 = sold everywhere, 5 = nobody sells it. When the line has an `IRAQ MARKET` hint, score from it, not from memory: same product with 0 sellers = 5, 1–2 = 4, 3–4 = 3, 5–7 = 2 (8+ is already rejected by the catalog check). For a *similar* product, use it as a guide and adjust by how close the match is. Meta ads running in Iraq mean someone is already pushing it: score one lower.
 - Add `x` only to reject outright, whatever the scores: `bulky`, `kids_toy`, `low_value` (low perceived value; there is no price band), `shown` (already on the page), `consumable`, `sized`, `cosmetic`, `device_specific`, `not_product`.
-- An item passes when wow, mass, open and video are all 3 or more and it has no `x`. Only the best item of each product type passes.
+- **Ranking, not a pass bar** (Ahmed, 26 Nov): every judged item without an `x` is ranked by its score (each score below 3 costs 8 points), and the best 50 make the batch, never fewer than 30. Only the best item of each product type is kept (lanes: up to 3).
 Don't skip lines: an item left unjudged counts as "not processed", and the source isn't exhausted. If time runs short, say how many were left in `problems`.
 ```
-python3 auto_filter.py decide 50 5    # data/passes.json (top 50), data/shadow_rejects.json (5 rejects for Ahmed to check)
+python3 auto_filter.py decide 50 5    # first ranking -> data/photo_pool.json (top 100)
+python3 auto_filter.py photos         # contact sheets data/judge/photos/sheet_NN.png, 20 labelled photos each
+```
+**Photo check:** open every contact sheet with the Read tool and look at each product. Write `data/judge/photo_answer.json`: `{"<asin>": {"look": 1-5, "note": "short", "x": "low_value"}}`. `look` is perceived value to an Iraqi buyer: 1 = looks like a cheap 5k item (flat plastic, generic, nothing to show), 3 = fair, 5 = clearly worth paying for (visible tech or mechanism, premium finish, strong demo). Add `x: "low_value"` only for items that look cheap. Mark `x: "bulky"` if the photo shows it is clearly over 2 kg volume. Every pool item needs an answer.
+```
+python3 auto_filter.py decide 50 5    # final ranking with photo scores (look 1-5 = -10..+10 points): data/passes.json, data/shadow_rejects.json
 python3 auto_filter.py log <batch-date>   # every decision -> Supabase sourcing_candidates
 ```
 Then write `shortlist.json` from the inbox items, `data/passes.json` and `data/shadow_rejects.json`, one entry per item:

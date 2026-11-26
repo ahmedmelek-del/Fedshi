@@ -39,7 +39,10 @@ SATURATED_MATCH = 0.75   # share of a Fedshi item's name words found in the titl
 TYPE_MATCH = 0.5         # enough to borrow the product type and its ghost-test record
 FAILED_TYPE_TESTS = 3    # a type with at least this many tests and no pass is rejected
 SATURATED_SELLERS = 8    # same product already sold by this many Iraqi sellers/pages -> rejected as saturated
-PASS_MIN = 3             # every judge score must reach this to pass
+PASS_MIN = 3             # a score below this costs ranking points and becomes the reason if the item misses the cut
+WEAK_PENALTY = 8         # ranking points lost per judge score below PASS_MIN
+MIN_BATCH = 30           # the batch is always filled to at least this many (ranking, not a pass bar)
+PHOTO_POOL = 100         # this many top-ranked items get the photo check
 JUDGE_REASON = [('open', 'saturated', 'already common in Iraq'),
                 ('wow', 'no_wow', 'no wow or problem solved'),
                 ('mass', 'niche', 'too niche for mass market'),
@@ -178,10 +181,20 @@ def collect():
     return out
 
 
+def _photo_answers():
+    try:
+        return json.load(open('data/judge/photo_answer.json'))
+    except FileNotFoundError:
+        return {}
+
+
 def decide(n=50, sample=5):
+    """Rank every judged item and take the best n (at least MIN_BATCH): scores rank, they don't gate.
+    Hard rejects (`x`) and a failed photo check still reject outright."""
     collect()
     queue = json.load(open('data/judge_queue.json'))
     judged = json.load(open('data/judged.json'))
+    photo = _photo_answers()
     out, missing = [], 0
     for r in queue:
         j = judged.get(r['asin'])
@@ -190,50 +203,101 @@ def decide(n=50, sample=5):
             continue
         scores = {k: int(j.get(k, 0)) for k in WEIGHTS}
         low = [(k, code, text) for k, code, text in JUDGE_REASON if scores[k] < PASS_MIN]
-        if j.get('x'):  # the judge's hard reject: bulky, kids_toy, low_value, shown, consumable, sized, not_product...
-            low = [(None, j['x'], VETO.get(j['x'], j['x'].replace('_', ' ')))]
-        score = round(sum(WEIGHTS[k] * v / 5 for k, v in scores.items())
-                      + min(r.get('reviews') or 0, 1000) / 1000 * 10 + (5 if r.get('season') else 0)
-                      + 5 * (len(r.get('sources') or []) > 1))
-        k, code, text = min(low, key=lambda x: scores.get(x[0], 0)) if low else (None, None, None)
-        out.append({**r, 'product_type': j.get('type') or r.get('product_type'), 'scores': scores, 'score': score,
-                    'auto_decision': 'reject' if low else 'pass', 'reason_code': code or 'pass',
-                    'reason': (f"{text}{f' ({k} {scores[k]}/5)' if k else ''}. " if low else '') + (j.get('why') or '')})
-    # One item per product type: the best one passes, the rest are near-duplicates.
-    # Exploration lanes keep up to max_per_type per type, so a new type gets a fair test.
-    best = {}
-    for r in sorted([r for r in out if r['auto_decision'] == 'pass'], key=lambda r: -r['score']):
+        ph = photo.get(r['asin']) or {}
+        veto = j.get('x') or ph.get('x')
+        score = (sum(WEIGHTS[k] * v / 5 for k, v in scores.items())
+                 + min(r.get('reviews') or 0, 1000) / 1000 * 10 + (5 if r.get('season') else 0)
+                 + 5 * (len(r.get('sources') or []) > 1)
+                 - WEAK_PENALTY * len(low))
+        if ph.get('look'):  # perceived value from the photo, 1-5: -10 .. +10
+            score += (int(ph['look']) - 3) * 5
+        why = (j.get('why') or '') + (f" Photo: {ph['note']}" if ph.get('note') else '')
+        row = {**r, 'product_type': j.get('type') or r.get('product_type'), 'scores': scores, 'score': round(score),
+               'photo_look': ph.get('look'), 'weak': [k for k, _, _ in low]}
+        if veto:
+            row.update(auto_decision='reject', reason_code=veto,
+                       reason=f"{VETO.get(veto, veto.replace('_', ' '))}. {why}")
+        else:
+            k, code, text = min(low, key=lambda x: scores[x[0]]) if low else (None, 'below_cut', '')
+            row.update(auto_decision='candidate', reason_code=code,
+                       reason=(f"{text} ({k} {scores[k]}/5). " if k else '') + why)
+        out.append(row)
+    ranked = sorted([r for r in out if r['auto_decision'] == 'candidate'], key=lambda r: -r['score'])
+    # One item per product type (lanes: up to max_per_type), best first.
+    best, eligible = {}, []
+    for r in ranked:
         t = (r.get('product_type') or '').lower()
         lane = lanes.by_id(r.get('lane')) if r.get('lane') else None
-        limit = lane['max_per_type'] if lane else 1
-        if len(best.get(t, [])) >= limit:
+        if len(best.get(t, [])) >= (lane['max_per_type'] if lane else 1):
             r.update(auto_decision='reject', reason_code='duplicate',
                      reason=f"Same product type as a better pick ({best[t][0]}). " + r['reason'])
         else:
             best.setdefault(t, []).append(r['title'][:40])
-    ranked = sorted([r for r in out if r['auto_decision'] == 'pass'], key=lambda r: -r['score'])
-    # Each running lane reserves its quota of the batch; the rest is filled by rank.
-    passes, reserved = [], set()
+            eligible.append(r)
+    n = max(int(n), MIN_BATCH)
+    # Each running lane reserves its quota; the rest is filled by rank.
+    passes, taken = [], set()
     for lane in lanes.running():
-        mine = [r for r in ranked if r.get('lane') == lane['id']][:lane['quota']]
+        mine = [r for r in eligible if r.get('lane') == lane['id']][:lane['quota']]
         passes += mine
-        reserved |= {r['asin'] for r in mine}
-    passes += [r for r in ranked if r['asin'] not in reserved][:max(0, int(n) - len(passes))]
+        taken |= {r['asin'] for r in mine}
+    passes += [r for r in eligible if r['asin'] not in taken][:max(0, n - len(passes))]
+    taken = {r['asin'] for r in passes}
+    for r in out:
+        if r['auto_decision'] == 'candidate':
+            if r['asin'] in taken:
+                r['auto_decision'] = 'pass'
+                r['reason'] = ('Meets every score. ' if not r['weak'] else f"In today's top {n}; weak on {', '.join(r['weak'])}. ") + r['reason']
+            else:
+                r['auto_decision'] = 'reject'
+                r['reason'] = f"Ranked below today's top {n}. " + r['reason']
     passes.sort(key=lambda r: -r['score'])
     rejects = [r for r in out if r['auto_decision'] == 'reject']
-    random.seed(len(out))
     json.dump(out, open('data/auto_decisions.json', 'w'), ensure_ascii=False)
-    json.dump(passes[:int(n)], open('data/passes.json', 'w'), indent=1, ensure_ascii=False)
+    json.dump(passes, open('data/passes.json', 'w'), indent=1, ensure_ascii=False)
+    json.dump(eligible[:PHOTO_POOL], open('data/photo_pool.json', 'w'), ensure_ascii=False)
+    random.seed(len(out))
+    json.dump(random.sample(rejects, min(int(sample), len(rejects))), open('data/shadow_rejects.json', 'w'),
+              indent=1, ensure_ascii=False)
     for lane in lanes.running():
         print(f"lane {lane['name']}: {sum(1 for r in out if r.get('lane') == lane['id'])} judged, "
               f"{sum(1 for r in passes if r.get('lane') == lane['id'])} in the batch")
-    json.dump(random.sample(rejects, min(int(sample), len(rejects))), open('data/shadow_rejects.json', 'w'),
-              indent=1, ensure_ascii=False)
-    print(f'judge: {len(passes)} pass, {len(rejects)} reject, {missing} not judged (they stay undecided). '
-          f'Top {min(int(n), len(passes))} -> data/passes.json; {min(int(sample), len(rejects))} rejects to check '
-          f'-> data/shadow_rejects.json')
+    strong = sum(1 for r in passes if not r['weak'])
+    print(f"ranked {len(out)} judged items: batch of {len(passes)} ({strong} meet every score), {len(rejects)} rejected, "
+          f"{missing} not judged. {'Photo answers used for ' + str(len(photo)) + ' items. ' if photo else ''}"
+          f"-> data/passes.json, data/photo_pool.json (top {min(PHOTO_POOL, len(eligible))} for the photo check)")
     if missing:
         print('WARNING: every queued item must be judged for the source to count as exhausted.')
+
+
+def photos(per_sheet=20):
+    """Contact sheets of the photo pool: numbered product photos with their ids, for the judge to look at.
+    The judge answers data/judge/photo_answer.json: {"<asin>": {"look": 1-5, "note": "...", "x": "low_value"?}}."""
+    import html
+    pool = json.load(open('data/photo_pool.json'))
+    os.makedirs('data/judge/photos', exist_ok=True)
+    per_sheet = int(per_sheet)
+    sheets = []
+    for k in range(0, len(pool), per_sheet):
+        cells = ''.join(
+            f'<figure><img src="{html.escape((r.get("image_url") or r.get("image") or "").replace("images-eu.ssl-images-amazon.com", "m.media-amazon.com"))}">'
+            f'<figcaption><b>{r["asin"]}</b> {html.escape(r["title"][:60])}</figcaption></figure>'
+            for r in pool[k:k + per_sheet])
+        page = ('<html><body style="margin:0;font:13px sans-serif;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;'
+                'padding:6px;background:#fff">' + cells.replace('<figure>', '<figure style="margin:0;border:1px solid #ddd;'
+                'padding:4px">').replace('<img ', '<img style="width:100%;height:220px;object-fit:contain" ')
+                + '</body></html>')
+        path = f'data/judge/photos/sheet_{k // per_sheet:02d}.html'
+        open(path, 'w').write(page)
+        sheets.append(path)
+    shots = subprocess.run(['node', '-e', """
+const { chromium } = require('playwright');
+(async () => { const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1400, height: 1200 } });
+  for (const f of process.argv.slice(1)) { await p.goto('file://' + require('path').resolve(f), { waitUntil: 'networkidle' }).catch(() => {});
+    await p.screenshot({ path: f.replace('.html', '.png'), fullPage: true }); }
+  await b.close(); })();""", *sheets], capture_output=True, text=True)
+    print(f"{len(pool)} photos on {len(sheets)} contact sheets -> " + ', '.join(s.replace('.html', '.png') for s in sheets)
+          + (f" (errors: {shots.stderr[:200]})" if shots.returncode else ''))
 
 
 def _row(r, batch, stage, decision, code, detail):
@@ -326,6 +390,6 @@ def stats():
 
 if __name__ == '__main__':
     cmd, *args = sys.argv[1:] or ['help']
-    {'catalog': catalog, 'match': match, 'sheets': sheets, 'decide': decide, 'log': log, 'human': human,
+    {'catalog': catalog, 'match': match, 'sheets': sheets, 'decide': decide, 'photos': photos, 'log': log, 'human': human,
      'stats': stats}.get(
         cmd, lambda *a: print(__doc__))(*args)
