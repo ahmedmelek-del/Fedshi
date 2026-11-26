@@ -10,3 +10,6 @@ product-funnel/poc/data/inbox_images/
 product-funnel/poc/out/
 __pycache__/
 product-funnel/poc/data/judge/
+
+# Review-queue scoring run outputs
+review-queue/data/
