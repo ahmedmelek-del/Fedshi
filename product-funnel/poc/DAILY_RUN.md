@@ -79,6 +79,8 @@ Criteria:
 - Culturally and legally OK.
 - Fits under 2 kg volume weight.
 
+**Where items come from is global** (Ahmed, 26 Nov): an item can be trending in MENA, Asia, the US or Europe. What matters is that it fits the criteria and would sell to Iraqi COD buyers, not where the trend started.
+
 Each candidate has `sources` and `source_label`: Gulf items (`gulf: true`) and items on more than one store or list are upstream proof. Prefer them, and say so in the note. Gulf best sellers show what is already selling next door; still check they aren't common in Iraq. Aim for a mix: roughly half from the Gulf lists and half from Amazon US.
 
 **New-category trials (lanes).** Run `python3 lanes.py` to see which lanes are running (now: Beauty devices, 25 Nov–9 Dec). Lane items carry `NEW-CATEGORY TRIAL` on their sheet line. Judge them on the same criteria and just as strictly on Iraq fit; for beauty devices, reject real cosmetics, liquids and creams with `x: cosmetic`, and prefer the hair and grooming devices that passed ghost tests (heated combs, hair removal, nail clippers, callus removers, scalp massagers). Each lane reserves its `quota` of the batch and keeps up to 3 passes per product type. Say in the run record how many lane items were judged and how many made the batch.
