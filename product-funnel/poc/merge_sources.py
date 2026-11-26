@@ -46,8 +46,18 @@ for path in sys.argv[1:]:
             merged[key] = {**r, 'sources': [r['source']]}
 
 out = list(merged.values())
+TT = {'us': 'US', 'gb': 'UK', 'my': 'Malaysia', 'th': 'Thailand', 'id': 'Indonesia', 'ph': 'Philippines', 'vn': 'Vietnam'}
+
+
+def label(s):
+    if s.startswith('tiktok_'):  # tiktok_<region>_<top|new>
+        _, cc, kind = s.split('_', 2)
+        return f"TikTok Shop {TT.get(cc, cc.upper())} {'new hit' if kind == 'new' else 'top seller'}"
+    return LABEL.get(s, s)
+
+
 for r in out:
-    r['source_label'] = ' · '.join(LABEL.get(s, s) for s in r['sources'])
+    r['source_label'] = ' · '.join(label(s) for s in r['sources'])
     r['gulf'] = any(s.startswith(('amazon_ae', 'amazon_sa')) for s in r['sources'])
 multi = sum(1 for r in out if len(r['sources']) > 1)
 print(f'{len(out)} unique items, {multi} on more than one store/list, '

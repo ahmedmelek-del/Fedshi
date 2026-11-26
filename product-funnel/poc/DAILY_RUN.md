@@ -18,6 +18,8 @@ One run per day. If the first pass finds fewer than 50 good items, don't add wea
 
 Then get the Supabase funnel key: `ArtifactData get` collection `data/users/me`, doc `funnel` (Ahmed's private area; only he and runs acting as him can read it). `export SOURCING_TOKEN=<its token field>` for every `auto_filter.py` command, and never print it or write it to a file. It opens only the funnel functions. If it's missing or past its `expires` date, carry on without the Supabase steps and put "Supabase key missing or expired: ask Claude for a new one" in `problems`. Then refresh the catalog snapshot: `python3 auto_filter.py catalog`.
 
+Then restore the FastMoss login (TikTok Shop trends): `ArtifactData get` collection `data/users/me`, doc `fastmoss`, with `out_dir`. Write that doc's fields (not the `id`/`version` wrapper) as JSON to `~/.fastmoss-mcp/state.json` with `chmod 600`, and never print it. `crawl_all.sh` runs the FastMoss source only when that file exists. After the crawl, if `oauth_access_token` in the file changed (the client refreshes it 12 hours before it expires), save it back: `ArtifactData set` the same doc with `file_path` = the state file, pinned to the version you read. If the doc is missing, or the source logs a refresh failure in `data/raw/tiktok.log`, put "FastMoss login expired: ask Claude to log in again" in `problems`.
+
 ## 1. Learn from yesterday's decisions
 - `ArtifactData list` the `decisions` collection and the `items` collection (page through with the cursor).
 - `ArtifactData get` `meta/taste` and read its `md` field. These are the current rules and patterns; `taste.md` in the repo is only a starting copy.
@@ -39,7 +41,7 @@ Then get the Supabase funnel key: `ArtifactData get` collection `data/users/me`,
 ## 3. Crawl and filter
 First rebuild the "already shown" lists from the review page. It's the source of truth, even when an earlier run couldn't push: `ArtifactData list` collection `items` with `out_dir` (page through with the cursor), then `python3 build_seen.py <out_dir>/items`.
 ```
-bash crawl_all.sh        # Amazon US new releases + UAE/Saudi new releases + UAE/Saudi/US best sellers + Gulf searches for open seasons, merged (~12 min)
+bash crawl_all.sh        # Amazon US/UAE/Saudi lists + Gulf season and lane searches + TikTok Shop top sellers (FastMoss), merged (~12 min)
 python3 prefilter.py data/amazon_new_releases.json data/candidates.json data/seen_asins.txt
 ```
 
