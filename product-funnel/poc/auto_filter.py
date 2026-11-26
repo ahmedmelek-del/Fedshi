@@ -83,14 +83,21 @@ def catalog():
     print(f"catalog: {len(d['items'])} Fedshi items, {len(d['competitors'])} competitor items")
 
 
+# Words too generic to identify a product: a match needs 2+ shared words outside this list.
+GENERIC = set('smart pro max plus wireless usb led light lights lamp electric electronic rechargeable portable mini '
+              'automatic digital holder stand set kit tool tools home car kitchen bag box cover case outdoor indoor '
+              'black white christmas gift premium professional heavy duty multi function functional new'.split())
+
+
 def best_match(tk, index, items):
+    tk = {w for w in tk if w not in GENERIC} or tk
     hits = {}
     for w in tk:
         for i in index.get(w, ()):
             hits[i] = hits.get(i, 0) + 1
     best, score = None, 0.0
     for i, n in hits.items():
-        s = n / len(items[i]['tk'])
+        s = n / max(1, len({w for w in items[i]['tk'] if w not in GENERIC}) or len(items[i]['tk']))
         if n >= 2 and s > score:
             best, score = i, s
     return best, score
@@ -132,7 +139,7 @@ def match():
             rejects.append({**row, 'reason_code': 'saturated',
                             'reason': f"Already common in Iraq: {mk['sellers']} Iraqi sellers of {m['name']}"
                                       f" (median {int(mk['median_iqd'] or 0):,} IQD, checked {mk['checked']})"})
-        elif info and m['type_tests'] >= FAILED_TYPE_TESTS and m['type_passed'] == 0:
+        elif m and s >= SATURATED_MATCH and m['type_tests'] >= FAILED_TYPE_TESTS and m['type_passed'] == 0:
             rejects.append({**row, 'reason_code': 'failed_before',
                             'reason': f"{m['type']}: 0 of {m['type_tests']} ghost tests passed"})
         else:
